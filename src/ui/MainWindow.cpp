@@ -148,8 +148,10 @@ MainWindow::MainWindow(QWidget *parent)
     m_statusFooter = new QLabel("System monitor active | Refreshing every second", footerWidget);
     m_statusFooter->setStyleSheet("color: #6e7681; font-size: 11px;");
 
-    auto *copyrightLabel = new QLabel("© 2026 taskmanager-harbor · novabase.se", footerWidget);
-    copyrightLabel->setStyleSheet("color: #00d2ff; font-size: 11px; font-weight: bold;");
+    auto *copyrightLabel = new QLabel("© 2026 taskmanager-harbor · <a href=\"https://novabase.se\" style=\"color: #00d2ff; text-decoration: underline;\">novabase.se</a>", footerWidget);
+    copyrightLabel->setStyleSheet("font-size: 11px; font-weight: bold; color: #8b949e;");
+    copyrightLabel->setOpenExternalLinks(true);
+    copyrightLabel->setCursor(Qt::PointingHandCursor);
 
     footerLayout->addWidget(m_statusFooter);
     footerLayout->addStretch(1);
