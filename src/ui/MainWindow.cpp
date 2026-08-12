@@ -3,7 +3,6 @@
 #include <QHBoxLayout>
 #include <QGridLayout>
 #include <QApplication>
-#include <QDateTime>
 #include <QIcon>
 
 namespace Harbor {
@@ -20,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("Taskmanager-Harbor — System Monitor");
     setWindowIcon(QIcon(":/assets/icons/logo.svg"));
     resize(1100, 750);
-    setMinimumSize(900, 600);
+    setMinimumSize(500, 500);
 
     applyDarkStyleSheet();
 
@@ -60,9 +59,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     mainLayout->addWidget(headerWidget);
 
-    // Main Tab Widget
-    m_tabWidget = new QTabWidget(this);
-    m_tabWidget->setIconSize(QSize(20, 20));
+    // --- Wrapping Tab Bar (FlowLayout up to 3 rows) ---
+    m_tabBarWidget = new QWidget(this);
+    m_flowLayout = new FlowLayout(m_tabBarWidget, 0, 6, 6);
+
+    // Stacked Widget for Page Content
+    m_stackedWidget = new QStackedWidget(this);
+    m_stackedWidget->setStyleSheet("QStackedWidget { background-color: #12141c; border: 1px solid #232838; border-radius: 8px; }");
 
     // --- Tab 1: Overview Grid ---
     m_overviewTab = new QWidget();
@@ -99,7 +102,7 @@ MainWindow::MainWindow(QWidget *parent)
     overviewLayout->addWidget(m_overviewNetGraph, 1, 0);
     overviewLayout->addWidget(m_overviewDiskGraph, 1, 1);
 
-    // --- Detail Views ---
+    // --- Sub Views ---
     m_applicationsView = new ApplicationsView(this);
     m_cpuView = new CpuView(this);
     m_memoryView = new MemoryView(this);
@@ -108,17 +111,34 @@ MainWindow::MainWindow(QWidget *parent)
     m_processView = new ProcessView(this);
     m_systemInfoView = new SystemInfoView(this);
 
-    // Set Tabs with Custom Vector Icons
-    m_tabWidget->addTab(m_overviewTab, QIcon(":/assets/icons/overview.svg"), "Overview");
-    m_tabWidget->addTab(m_applicationsView, QIcon(":/assets/icons/applications.svg"), "Applications");
-    m_tabWidget->addTab(m_cpuView, QIcon(":/assets/icons/cpu.svg"), "CPU & Cores");
-    m_tabWidget->addTab(m_memoryView, QIcon(":/assets/icons/memory.svg"), "Memory & Swap");
-    m_tabWidget->addTab(m_networkView, QIcon(":/assets/icons/network.svg"), "Network");
-    m_tabWidget->addTab(m_diskView, QIcon(":/assets/icons/disk.svg"), "Disks & Storage");
-    m_tabWidget->addTab(m_processView, QIcon(":/assets/icons/processes.svg"), "Processes");
-    m_tabWidget->addTab(m_systemInfoView, QIcon(":/assets/icons/system.svg"), "System Info");
+    // Add Tabs Helper
+    auto addTabItem = [&](QWidget *pageWidget, const QIcon &icon, const QString &title) {
+        int index = static_cast<int>(m_tabButtons.size());
+        m_stackedWidget->addWidget(pageWidget);
 
-    mainLayout->addWidget(m_tabWidget, 1);
+        auto *btn = new QPushButton(icon, "  " + title, m_tabBarWidget);
+        btn->setIconSize(QSize(18, 18));
+        btn->setCursor(Qt::PointingHandCursor);
+
+        connect(btn, &QPushButton::clicked, this, [this, index]() {
+            onTabButtonClicked(index);
+        });
+
+        m_flowLayout->addWidget(btn);
+        m_tabButtons.push_back(btn);
+    };
+
+    addTabItem(m_overviewTab, QIcon(":/assets/icons/overview.svg"), "Overview");
+    addTabItem(m_applicationsView, QIcon(":/assets/icons/applications.svg"), "Applications");
+    addTabItem(m_cpuView, QIcon(":/assets/icons/cpu.svg"), "CPU & Cores");
+    addTabItem(m_memoryView, QIcon(":/assets/icons/memory.svg"), "Memory & Swap");
+    addTabItem(m_networkView, QIcon(":/assets/icons/network.svg"), "Network");
+    addTabItem(m_diskView, QIcon(":/assets/icons/disk.svg"), "Disks & Storage");
+    addTabItem(m_processView, QIcon(":/assets/icons/processes.svg"), "Processes");
+    addTabItem(m_systemInfoView, QIcon(":/assets/icons/system.svg"), "System Info");
+
+    mainLayout->addWidget(m_tabBarWidget);
+    mainLayout->addWidget(m_stackedWidget, 1);
 
     // Footer
     m_statusFooter = new QLabel("System monitor active | Refreshing every second", this);
@@ -127,14 +147,41 @@ MainWindow::MainWindow(QWidget *parent)
 
     setCentralWidget(centralWidget);
 
-    // Connect Collector & Tab Switching
+    // Connect Collector & Actions
     connect(&m_collector, &MetricsCollector::metricsUpdated, this, &MainWindow::onMetricsUpdated);
-    connect(m_tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onMetricsUpdated);
     connect(m_applicationsView, &ApplicationsView::appActionTriggered, &m_collector, &MetricsCollector::updateAll);
     connect(m_processView, &ProcessView::processActionTriggered, &m_collector, &MetricsCollector::updateAll);
 
+    // Select first tab
+    onTabButtonClicked(0);
+
     // Initial system info update
     m_systemInfoView->updateSystemInfo(m_collector.systemInfo());
+}
+
+void MainWindow::onTabButtonClicked(int index) {
+    if (index < 0 || index >= static_cast<int>(m_tabButtons.size())) return;
+
+    m_stackedWidget->setCurrentIndex(index);
+    updateTabButtonStyles(index);
+    onMetricsUpdated();
+}
+
+void MainWindow::updateTabButtonStyles(int selectedIndex) {
+    for (size_t i = 0; i < m_tabButtons.size(); ++i) {
+        if (static_cast<int>(i) == selectedIndex) {
+            m_tabButtons[i]->setStyleSheet(
+                "QPushButton { background-color: #1a2233; color: #00d2ff; border: 1px solid #00d2ff; "
+                "border-top: 2px solid #00d2ff; border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; text-align: left; }"
+            );
+        } else {
+            m_tabButtons[i]->setStyleSheet(
+                "QPushButton { background-color: #151824; color: #8b949e; border: 1px solid #232838; "
+                "border-radius: 6px; padding: 8px 14px; font-weight: bold; font-size: 13px; text-align: left; }"
+                "QPushButton:hover { background-color: #1e2436; color: #c9d1d9; border: 1px solid #323b52; }"
+            );
+        }
+    }
 }
 
 void MainWindow::onMetricsUpdated() {
@@ -164,9 +211,9 @@ void MainWindow::onMetricsUpdated() {
     m_badgeNet->setText(QString("NET: ⬇ %1 / ⬆ %2").arg(formatRateShort(net.totalRxRateBps)).arg(formatRateShort(net.totalTxRateBps)));
 
     // LAZY TAB UPDATES: Only update the view that is currently selected!
-    int currentTab = m_tabWidget->currentIndex();
+    int currentTab = m_stackedWidget->currentIndex();
     switch (currentTab) {
-        case 0: // Overview (already updated sparklines above)
+        case 0: // Overview
             break;
         case 1: // Applications
             m_applicationsView->updateApplications(m_collector.applicationGroups());
@@ -205,31 +252,6 @@ void MainWindow::applyDarkStyleSheet() {
             background-color: #141722;
             border-bottom: 1px solid #232838;
             border-radius: 6px;
-        }
-        QTabWidget::pane {
-            border: 1px solid #232838;
-            background-color: #12141c;
-            border-radius: 8px;
-            top: -1px;
-        }
-        QTabBar::tab {
-            background-color: #171b26;
-            color: #8b949e;
-            padding: 10px 18px;
-            margin-right: 4px;
-            border-top-left-radius: 8px;
-            border-top-right-radius: 8px;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        QTabBar::tab:hover {
-            background-color: #202636;
-            color: #c9d1d9;
-        }
-        QTabBar::tab:selected {
-            background-color: #12141c;
-            color: #00d2ff;
-            border-top: 2px solid #00d2ff;
         }
         QScrollBar:vertical {
             border: none;

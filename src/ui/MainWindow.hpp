@@ -2,9 +2,12 @@
 #define MAINWINDOW_HPP
 
 #include <QMainWindow>
-#include <QTabWidget>
+#include <QStackedWidget>
+#include <QPushButton>
 #include <QLabel>
+#include <vector>
 #include "backend/MetricsCollector.hpp"
+#include "ui/FlowLayout.hpp"
 #include "ui/CpuView.hpp"
 #include "ui/ApplicationsView.hpp"
 #include "ui/MemoryView.hpp"
@@ -23,14 +26,20 @@ public:
     ~MainWindow() override = default;
 
 private slots:
+    void onTabButtonClicked(int index);
     void onMetricsUpdated();
 
 private:
     void applyDarkStyleSheet();
+    void updateTabButtonStyles(int selectedIndex);
 
     MetricsCollector m_collector;
 
-    QTabWidget *m_tabWidget;
+    QWidget *m_tabBarWidget;
+    FlowLayout *m_flowLayout;
+    std::vector<QPushButton*> m_tabButtons;
+
+    QStackedWidget *m_stackedWidget;
 
     // Overview Tab components
     QWidget *m_overviewTab;

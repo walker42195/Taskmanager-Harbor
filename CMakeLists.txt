@@ -14,6 +14,7 @@ set(SOURCES
     src/main.cpp
     src/backend/MetricsCollector.cpp
     src/backend/ProcessManager.cpp
+    src/ui/FlowLayout.cpp
     src/ui/GraphWidget.cpp
     src/ui/ApplicationsView.cpp
     src/ui/ProcessView.cpp
@@ -29,6 +30,7 @@ set(HEADERS
     src/backend/SystemMetrics.hpp
     src/backend/MetricsCollector.hpp
     src/backend/ProcessManager.hpp
+    src/ui/FlowLayout.hpp
     src/ui/GraphWidget.hpp
     src/ui/ApplicationsView.hpp
     src/ui/ProcessView.hpp
