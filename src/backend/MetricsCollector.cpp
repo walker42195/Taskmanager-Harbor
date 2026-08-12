@@ -38,6 +38,7 @@ void MetricsCollector::updateAll() {
     readNetwork();
     readDisk();
     readProcesses();
+    readApplicationGroups();
 
     if (!m_sysInfo.cpuModel.empty()) {
         m_cpu.modelName = m_sysInfo.cpuModel;
@@ -381,6 +382,57 @@ void MetricsCollector::readProcesses() {
 
     m_processes = std::move(newProcList);
     m_lastProcCpuTimes = std::move(newProcCpuTimes);
+}
+
+void MetricsCollector::readApplicationGroups() {
+    std::unordered_map<std::string, ApplicationGroup> groups;
+
+    for (const auto &p : m_processes) {
+        if (p.name.empty() || p.name[0] == '[') continue;
+
+        std::string rawName = p.name;
+        std::string appName = rawName;
+        std::string iconName = rawName;
+
+        if (rawName == "brave" || rawName == "brave-browser") { appName = "Brave"; iconName = "brave-browser"; }
+        else if (rawName == "firefox" || rawName == "firefox-bin") { appName = "Firefox"; iconName = "firefox"; }
+        else if (rawName == "chrome" || rawName == "google-chrome") { appName = "Google Chrome"; iconName = "google-chrome"; }
+        else if (rawName == "discord") { appName = "Discord"; iconName = "discord"; }
+        else if (rawName == "telegram-desktop" || rawName == "telegram") { appName = "Telegram"; iconName = "telegram"; }
+        else if (rawName == "dolphin") { appName = "Dolphin"; iconName = "system-file-manager"; }
+        else if (rawName == "konsole") { appName = "Konsole"; iconName = "utilities-terminal"; }
+        else if (rawName == "kate") { appName = "Kate"; iconName = "kate"; }
+        else if (rawName == "digikam") { appName = "digiKam"; iconName = "digikam"; }
+        else if (rawName == "nextcloud") { appName = "Nextcloud"; iconName = "nextcloud"; }
+        else if (rawName == "Taskmanager-Harbor" || rawName == "taskmanager-harbor") { appName = "Taskmanager-Harbor"; iconName = "taskmanager-harbor"; }
+        else if (rawName == "code" || rawName == "code-oss") { appName = "VS Code"; iconName = "com.visualstudio.code"; }
+        else if (rawName == "steam" || rawName == "steamwebhelper") { appName = "Steam"; iconName = "steam"; }
+        else if (rawName == "spotify") { appName = "Spotify"; iconName = "spotify"; }
+        else if (rawName == "vlc") { appName = "VLC Media Player"; iconName = "vlc"; }
+        else if (rawName == "gimp") { appName = "GIMP"; iconName = "gimp"; }
+        else if (rawName == "obs" || rawName == "obs-studio") { appName = "OBS Studio"; iconName = "obs"; }
+
+        auto &grp = groups[appName];
+        if (grp.displayName.empty()) {
+            grp.displayName = appName;
+            grp.iconName = iconName;
+            grp.user = p.user;
+        }
+        grp.pids.push_back(p.pid);
+        grp.totalCpuPercent += p.cpuPercent;
+        grp.totalRssBytes += p.rssBytes;
+    }
+
+    std::vector<ApplicationGroup> resultList;
+    for (auto &pair : groups) {
+        resultList.push_back(pair.second);
+    }
+
+    std::sort(resultList.begin(), resultList.end(), [](const ApplicationGroup &a, const ApplicationGroup &b) {
+        return a.totalRssBytes > b.totalRssBytes;
+    });
+
+    m_applications = std::move(resultList);
 }
 
 void MetricsCollector::readStaticSystemInfo() {

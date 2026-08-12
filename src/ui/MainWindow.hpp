@@ -6,6 +6,7 @@
 #include <QLabel>
 #include "backend/MetricsCollector.hpp"
 #include "ui/CpuView.hpp"
+#include "ui/ApplicationsView.hpp"
 #include "ui/MemoryView.hpp"
 #include "ui/NetworkView.hpp"
 #include "ui/DiskView.hpp"
@@ -39,6 +40,7 @@ private:
     GraphWidget *m_overviewDiskGraph;
 
     // Sub views
+    ApplicationsView *m_applicationsView;
     CpuView *m_cpuView;
     MemoryView *m_memoryView;
     NetworkView *m_networkView;

@@ -100,6 +100,7 @@ MainWindow::MainWindow(QWidget *parent)
     overviewLayout->addWidget(m_overviewDiskGraph, 1, 1);
 
     // --- Detail Views ---
+    m_applicationsView = new ApplicationsView(this);
     m_cpuView = new CpuView(this);
     m_memoryView = new MemoryView(this);
     m_networkView = new NetworkView(this);
@@ -109,6 +110,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Set Tabs with Custom Vector Icons
     m_tabWidget->addTab(m_overviewTab, QIcon(":/assets/icons/overview.svg"), "Overview");
+    m_tabWidget->addTab(m_applicationsView, QIcon(":/assets/icons/applications.svg"), "Applications");
     m_tabWidget->addTab(m_cpuView, QIcon(":/assets/icons/cpu.svg"), "CPU & Cores");
     m_tabWidget->addTab(m_memoryView, QIcon(":/assets/icons/memory.svg"), "Memory & Swap");
     m_tabWidget->addTab(m_networkView, QIcon(":/assets/icons/network.svg"), "Network");
@@ -127,6 +129,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Connect Collector
     connect(&m_collector, &MetricsCollector::metricsUpdated, this, &MainWindow::onMetricsUpdated);
+    connect(m_applicationsView, &ApplicationsView::appActionTriggered, &m_collector, &MetricsCollector::updateAll);
     connect(m_processView, &ProcessView::processActionTriggered, &m_collector, &MetricsCollector::updateAll);
 
     // Initial system info update
@@ -139,6 +142,7 @@ void MainWindow::onMetricsUpdated() {
     const auto &net = m_collector.networkMetrics();
     const auto &disk = m_collector.diskMetrics();
     const auto &procs = m_collector.processList();
+    const auto &apps = m_collector.applicationGroups();
 
     // Update Overview Tab Graphs
     m_overviewCpuGraph->addDataPoint(cpu.totalUsagePercent);
@@ -156,6 +160,7 @@ void MainWindow::onMetricsUpdated() {
     m_overviewDiskGraph->addDualDataPoint(disk.readRateBps, disk.writeRateBps);
 
     // Update Detail Views
+    m_applicationsView->updateApplications(apps);
     m_cpuView->updateCpu(cpu);
     m_memoryView->updateMemory(mem);
     m_networkView->updateNetwork(net);

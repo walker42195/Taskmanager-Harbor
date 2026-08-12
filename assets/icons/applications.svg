@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="appGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d2ff"/>
+      <stop offset="100%" stop-color="#0088ff"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Window Frame -->
+  <rect x="8" y="10" width="48" height="44" rx="6" fill="#121824" stroke="url(#appGrad)" stroke-width="3.5"/>
+  
+  <!-- Window Header Bar -->
+  <path d="M 8 18 L 56 18" stroke="url(#appGrad)" stroke-width="2"/>
+  <circle cx="15" cy="14" r="2" fill="#ff5252"/>
+  <circle cx="21" cy="14" r="2" fill="#ffb74d"/>
+  <circle cx="27" cy="14" r="2" fill="#00e676"/>
+  
+  <!-- App Grid Icons inside window -->
+  <rect x="15" y="24" width="14" height="11" rx="2.5" fill="#00d2ff"/>
+  <rect x="35" y="24" width="14" height="11" rx="2.5" fill="#00e676"/>
+  <rect x="15" y="39" width="14" height="9" rx="2.5" fill="#ff0080"/>
+  <rect x="35" y="39" width="14" height="9" rx="2.5" fill="#ffb74d"/>
+</svg>

@@ -21,6 +21,7 @@ public:
     const NetworkMetrics& networkMetrics() const { return m_network; }
     const DiskMetrics& diskMetrics() const { return m_disk; }
     const std::vector<ProcessInfo>& processList() const { return m_processes; }
+    const std::vector<ApplicationGroup>& applicationGroups() const { return m_applications; }
     const SystemInfo& systemInfo() const { return m_sysInfo; }
 
     void setUpdateInterval(int ms);
@@ -37,6 +38,7 @@ private:
     void readNetwork();
     void readDisk();
     void readProcesses();
+    void readApplicationGroups();
     void readStaticSystemInfo();
 
     QTimer m_timer;
@@ -48,6 +50,7 @@ private:
     NetworkMetrics m_network;
     DiskMetrics m_disk;
     std::vector<ProcessInfo> m_processes;
+    std::vector<ApplicationGroup> m_applications;
     SystemInfo m_sysInfo;
 
     // Previous state tracking for delta calculation

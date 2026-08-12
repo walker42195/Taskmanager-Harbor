@@ -2,6 +2,7 @@
 <qresource prefix="/">
     <file>assets/icons/logo.svg</file>
     <file>assets/icons/overview.svg</file>
+    <file>assets/icons/applications.svg</file>
     <file>assets/icons/cpu.svg</file>
     <file>assets/icons/memory.svg</file>
     <file>assets/icons/network.svg</file>

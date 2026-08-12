@@ -100,6 +100,15 @@ struct ProcessInfo {
     uint64_t stime{0};
 };
 
+struct ApplicationGroup {
+    std::string displayName;
+    std::string iconName;
+    std::vector<int> pids;
+    double totalCpuPercent{0.0};
+    uint64_t totalRssBytes{0};
+    std::string user;
+};
+
 struct SystemInfo {
     std::string hostname;
     std::string osName;
