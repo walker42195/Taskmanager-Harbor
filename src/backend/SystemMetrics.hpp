@@ -107,6 +107,7 @@ struct ApplicationGroup {
     double totalCpuPercent{0.0};
     uint64_t totalRssBytes{0};
     std::string user;
+    bool isBackgroundService{false};
 };
 
 struct SystemInfo {

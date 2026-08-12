@@ -39,7 +39,13 @@ private:
     void readDisk();
     void readProcesses();
     void readApplicationGroups();
+    void scanDesktopEntries();
     void readStaticSystemInfo();
+
+    struct DesktopAppMeta {
+        std::string name;
+        std::string icon;
+    };
 
     QTimer m_timer;
     QElapsedTimer m_elapsed;
@@ -51,6 +57,7 @@ private:
     DiskMetrics m_disk;
     std::vector<ProcessInfo> m_processes;
     std::vector<ApplicationGroup> m_applications;
+    std::unordered_map<std::string, DesktopAppMeta> m_desktopApps;
     SystemInfo m_sysInfo;
 
     // Previous state tracking for delta calculation

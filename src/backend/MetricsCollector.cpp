@@ -16,6 +16,7 @@ namespace Harbor {
 MetricsCollector::MetricsCollector(QObject *parent)
     : QObject(parent)
 {
+    scanDesktopEntries();
     readStaticSystemInfo();
     m_elapsed.start();
 
@@ -384,53 +385,106 @@ void MetricsCollector::readProcesses() {
     m_lastProcCpuTimes = std::move(newProcCpuTimes);
 }
 
+void MetricsCollector::scanDesktopEntries() {
+    std::vector<std::string> dirs = {
+        "/usr/share/applications",
+        "/usr/local/share/applications",
+        std::string(getenv("HOME") ? getenv("HOME") : "") + "/.local/share/applications"
+    };
+
+    for (const auto &dirPath : dirs) {
+        if (dirPath.empty() || !fs::exists(dirPath)) continue;
+
+        try {
+            for (const auto &entry : fs::directory_iterator(dirPath)) {
+                if (!entry.is_regular_file() || entry.path().extension() != ".desktop") continue;
+
+                std::ifstream f(entry.path());
+                if (!f.is_open()) continue;
+
+                std::string line;
+                std::string appName, iconName, execLine;
+                bool isApp = false;
+                bool noDisplay = false;
+
+                while (std::getline(f, line)) {
+                    if (line == "Type=Application") isApp = true;
+                    if (line == "NoDisplay=true") noDisplay = true;
+                    if (line.rfind("Name=", 0) == 0 && appName.empty()) appName = line.substr(5);
+                    if (line.rfind("Icon=", 0) == 0 && iconName.empty()) iconName = line.substr(5);
+                    if (line.rfind("Exec=", 0) == 0 && execLine.empty()) execLine = line.substr(5);
+                }
+
+                if (isApp && !noDisplay && !appName.empty() && !execLine.empty()) {
+                    std::istringstream ss(execLine);
+                    std::string execBinary;
+                    ss >> execBinary;
+
+                    size_t slashPos = execBinary.rfind('/');
+                    if (slashPos != std::string::npos) {
+                        execBinary = execBinary.substr(slashPos + 1);
+                    }
+
+                    if (!execBinary.empty()) {
+                        m_desktopApps[execBinary] = { appName, iconName };
+                        
+                        if (execBinary == "brave-browser") m_desktopApps["brave"] = { appName, iconName };
+                        if (execBinary == "telegram-desktop") m_desktopApps["telegram"] = { appName, iconName };
+                        if (execBinary == "code-oss") m_desktopApps["code"] = { appName, iconName };
+                        if (execBinary == "firefox-bin") m_desktopApps["firefox"] = { appName, iconName };
+                    }
+                }
+            }
+        } catch (...) {}
+    }
+
+    m_desktopApps["Taskmanager-Harbor"] = { "Taskmanager-Harbor", "taskmanager-harbor" };
+    m_desktopApps["taskmanager-harbor"] = { "Taskmanager-Harbor", "taskmanager-harbor" };
+}
+
 void MetricsCollector::readApplicationGroups() {
-    std::unordered_map<std::string, ApplicationGroup> groups;
+    std::unordered_map<std::string, ApplicationGroup> appGroups;
+    ApplicationGroup bgServicesGroup;
+    bgServicesGroup.displayName = "Background Services";
+    bgServicesGroup.iconName = "preferences-system";
+    bgServicesGroup.user = "system";
+    bgServicesGroup.isBackgroundService = true;
 
     for (const auto &p : m_processes) {
         if (p.name.empty() || p.name[0] == '[') continue;
 
         std::string rawName = p.name;
-        std::string appName = rawName;
-        std::string iconName = rawName;
-
-        if (rawName == "brave" || rawName == "brave-browser") { appName = "Brave"; iconName = "brave-browser"; }
-        else if (rawName == "firefox" || rawName == "firefox-bin") { appName = "Firefox"; iconName = "firefox"; }
-        else if (rawName == "chrome" || rawName == "google-chrome") { appName = "Google Chrome"; iconName = "google-chrome"; }
-        else if (rawName == "discord") { appName = "Discord"; iconName = "discord"; }
-        else if (rawName == "telegram-desktop" || rawName == "telegram") { appName = "Telegram"; iconName = "telegram"; }
-        else if (rawName == "dolphin") { appName = "Dolphin"; iconName = "system-file-manager"; }
-        else if (rawName == "konsole") { appName = "Konsole"; iconName = "utilities-terminal"; }
-        else if (rawName == "kate") { appName = "Kate"; iconName = "kate"; }
-        else if (rawName == "digikam") { appName = "digiKam"; iconName = "digikam"; }
-        else if (rawName == "nextcloud") { appName = "Nextcloud"; iconName = "nextcloud"; }
-        else if (rawName == "Taskmanager-Harbor" || rawName == "taskmanager-harbor") { appName = "Taskmanager-Harbor"; iconName = "taskmanager-harbor"; }
-        else if (rawName == "code" || rawName == "code-oss") { appName = "VS Code"; iconName = "com.visualstudio.code"; }
-        else if (rawName == "steam" || rawName == "steamwebhelper") { appName = "Steam"; iconName = "steam"; }
-        else if (rawName == "spotify") { appName = "Spotify"; iconName = "spotify"; }
-        else if (rawName == "vlc") { appName = "VLC Media Player"; iconName = "vlc"; }
-        else if (rawName == "gimp") { appName = "GIMP"; iconName = "gimp"; }
-        else if (rawName == "obs" || rawName == "obs-studio") { appName = "OBS Studio"; iconName = "obs"; }
-
-        auto &grp = groups[appName];
-        if (grp.displayName.empty()) {
-            grp.displayName = appName;
-            grp.iconName = iconName;
-            grp.user = p.user;
+        
+        if (m_desktopApps.count(rawName)) {
+            const auto &meta = m_desktopApps[rawName];
+            auto &grp = appGroups[meta.name];
+            if (grp.displayName.empty()) {
+                grp.displayName = meta.name;
+                grp.iconName = meta.icon.empty() ? rawName : meta.icon;
+                grp.user = p.user;
+            }
+            grp.pids.push_back(p.pid);
+            grp.totalCpuPercent += p.cpuPercent;
+            grp.totalRssBytes += p.rssBytes;
+        } else {
+            bgServicesGroup.pids.push_back(p.pid);
+            bgServicesGroup.totalCpuPercent += p.cpuPercent;
+            bgServicesGroup.totalRssBytes += p.rssBytes;
         }
-        grp.pids.push_back(p.pid);
-        grp.totalCpuPercent += p.cpuPercent;
-        grp.totalRssBytes += p.rssBytes;
     }
 
     std::vector<ApplicationGroup> resultList;
-    for (auto &pair : groups) {
+    for (auto &pair : appGroups) {
         resultList.push_back(pair.second);
     }
 
     std::sort(resultList.begin(), resultList.end(), [](const ApplicationGroup &a, const ApplicationGroup &b) {
         return a.totalRssBytes > b.totalRssBytes;
     });
+
+    if (!bgServicesGroup.pids.empty()) {
+        resultList.push_back(bgServicesGroup);
+    }
 
     m_applications = std::move(resultList);
 }
