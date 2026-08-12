@@ -21,13 +21,13 @@ CpuView::CpuView(QWidget *parent)
     auto *headerLayout = new QHBoxLayout(headerCard);
     headerLayout->setContentsMargins(16, 12, 16, 12);
 
-    m_modelLabel = new QLabel("CPU: Okänd", this);
+    m_modelLabel = new QLabel("Processor: Detecting...", this);
     m_modelLabel->setStyleSheet("color: #00d2ff; font-size: 15px; font-weight: bold;");
 
-    m_freqLabel = new QLabel("Frekvens: -- GHz", this);
+    m_freqLabel = new QLabel("Frequency: -- GHz", this);
     m_freqLabel->setStyleSheet("color: #8b949e; font-size: 13px;");
 
-    m_threadsLabel = new QLabel("Trådar: --", this);
+    m_threadsLabel = new QLabel("Threads: --", this);
     m_threadsLabel->setStyleSheet("color: #8b949e; font-size: 13px;");
 
     headerLayout->addWidget(m_modelLabel, 2);
@@ -38,7 +38,7 @@ CpuView::CpuView(QWidget *parent)
 
     // Total CPU Main Sparkline
     m_totalCpuGraph = new GraphWidget(this);
-    m_totalCpuGraph->setTitle("Total CPU-belastning (%)");
+    m_totalCpuGraph->setTitle("Total CPU Usage (%)");
     m_totalCpuGraph->setUnit("%");
     m_totalCpuGraph->setColors(QColor(0, 210, 255), QColor(0, 210, 255, 45)); // Electric Cyan
     m_totalCpuGraph->setRange(0.0, 100.0, false);
@@ -64,11 +64,14 @@ void CpuView::updateCpu(const CpuMetrics &cpu) {
 
     if (!cpu.modelName.empty()) {
         m_modelLabel->setText(QString("Processor: %1").arg(QString::fromStdString(cpu.modelName)));
+    } else {
+        m_modelLabel->setText("Processor: x86_64 Processor");
     }
+
     if (cpu.currentFreqMHz > 0) {
-        m_freqLabel->setText(QString("Frekvens: %1 GHz").arg(QString::number(cpu.currentFreqMHz / 1000.0, 'f', 2)));
+        m_freqLabel->setText(QString("Frequency: %1 GHz").arg(QString::number(cpu.currentFreqMHz / 1000.0, 'f', 2)));
     }
-    m_threadsLabel->setText(QString("Trådar / Kärnor: %1").arg(cpu.perCoreUsagePercent.size()));
+    m_threadsLabel->setText(QString("Threads / Cores: %1").arg(cpu.perCoreUsagePercent.size()));
 
     size_t numCores = cpu.perCoreUsagePercent.size();
 
@@ -93,7 +96,7 @@ void CpuView::updateCpu(const CpuMetrics &cpu) {
             cardLayout->setContentsMargins(8, 6, 8, 6);
             cardLayout->setSpacing(8);
 
-            auto *lbl = new QLabel(QString("Kärna %1").arg(i), card);
+            auto *lbl = new QLabel(QString("Core %1").arg(i), card);
             lbl->setStyleSheet("color: #a0aabe; font-size: 11px; font-weight: bold; border: none;");
 
             auto *bar = new QProgressBar(card);
@@ -128,7 +131,6 @@ void CpuView::updateCpu(const CpuMetrics &cpu) {
         m_coreWidgets[i].bar->setValue(static_cast<int>(usage));
         m_coreWidgets[i].pctLabel->setText(QString::number(usage, 'f', 0) + "%");
 
-        // Color coding high load
         if (usage > 85.0) {
             m_coreWidgets[i].bar->setStyleSheet(
                 "QProgressBar { background-color: #0d0f15; border: none; border-radius: 4px; }"

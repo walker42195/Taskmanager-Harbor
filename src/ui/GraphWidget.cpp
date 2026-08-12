@@ -38,6 +38,11 @@ void GraphWidget::setUnit(const QString &unit) {
     update();
 }
 
+void GraphWidget::setCustomValueText(const QString &text) {
+    m_customValueText = text;
+    update();
+}
+
 void GraphWidget::setRange(double minVal, double maxVal, bool autoScale) {
     m_minVal = minVal;
     m_maxVal = maxVal;
@@ -122,7 +127,9 @@ void GraphWidget::paintEvent(QPaintEvent *event) {
     if (!m_dataHistory.empty()) {
         double curVal = m_dataHistory.back();
         QString valStr;
-        if (m_unit == "%") {
+        if (!m_customValueText.isEmpty()) {
+            valStr = m_customValueText;
+        } else if (m_unit == "%") {
             valStr = QString::number(curVal, 'f', 1) + "%";
         } else if (m_unit == "B/s") {
             if (curVal >= 1024 * 1024 * 1024) valStr = QString::number(curVal / (1024 * 1024 * 1024), 'f', 1) + " GB/s";

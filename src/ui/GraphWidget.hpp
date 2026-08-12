@@ -19,6 +19,7 @@ public:
     void setSecondaryColors(const QColor &lineColor, const QColor &fillColor); // For dual lines (e.g. RX/TX)
     void setTitle(const QString &title);
     void setUnit(const QString &unit);
+    void setCustomValueText(const QString &text);
     void setRange(double minVal, double maxVal, bool autoScale = false);
     void setMaxHistoryLength(int length);
 
@@ -33,6 +34,7 @@ private:
 
     QString m_title;
     QString m_unit;
+    QString m_customValueText;
     QColor m_lineColor{0, 210, 255};   // Electric Cyan default
     QColor m_fillColor{0, 210, 255, 40};
 

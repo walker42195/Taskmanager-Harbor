@@ -38,6 +38,11 @@ void MetricsCollector::updateAll() {
     readDisk();
     readProcesses();
 
+    if (!m_sysInfo.cpuModel.empty()) {
+        m_cpu.modelName = m_sysInfo.cpuModel;
+    }
+    m_sysInfo.totalMemoryBytes = m_memory.totalRamBytes;
+
     m_firstRun = false;
     emit metricsUpdated();
 }

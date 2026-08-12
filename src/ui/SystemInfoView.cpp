@@ -62,14 +62,14 @@ SystemInfoView::SystemInfoView(QWidget *parent)
         gridLayout->addWidget(card, row, col);
     };
 
-    createCard("OPERATIVSYSTEM", m_osLabel, 0, 0);
-    createCard("KERNEL-VERSION", m_kernelLabel, 0, 1);
-    createCard("HOSTNAMN", m_hostnameLabel, 1, 0);
-    createCard("ARKITEKTUR", m_archLabel, 1, 1);
+    createCard("OPERATING SYSTEM", m_osLabel, 0, 0);
+    createCard("KERNEL VERSION", m_kernelLabel, 0, 1);
+    createCard("HOSTNAME", m_hostnameLabel, 1, 0);
+    createCard("ARCHITECTURE", m_archLabel, 1, 1);
     createCard("PROCESSOR", m_cpuLabel, 2, 0);
-    createCard("TRÅDAR / LOGISKA KÄRNOR", m_threadsLabel, 2, 1);
-    createCard("SYSTEMMINNE", m_ramLabel, 3, 0);
-    createCard("UPPTID (UPTIME)", m_uptimeLabel, 3, 1);
+    createCard("LOGICAL CORES / THREADS", m_threadsLabel, 2, 1);
+    createCard("SYSTEM MEMORY (RAM)", m_ramLabel, 3, 0);
+    createCard("SYSTEM UPTIME", m_uptimeLabel, 3, 1);
 
     mainLayout->addWidget(gridWidget);
     mainLayout->addStretch(1);
@@ -82,6 +82,26 @@ void SystemInfoView::updateSystemInfo(const SystemInfo &sysInfo) {
     m_archLabel->setText(QString::fromStdString(sysInfo.architecture));
     m_cpuLabel->setText(QString::fromStdString(sysInfo.cpuModel.empty() ? "x86_64 Processor" : sysInfo.cpuModel));
     m_threadsLabel->setText(QString::number(sysInfo.cpuThreadCount));
+
+    if (sysInfo.totalMemoryBytes > 0) {
+        double totalGb = static_cast<double>(sysInfo.totalMemoryBytes) / (1024.0 * 1024.0 * 1024.0);
+        m_ramLabel->setText(QString("%1 GB RAM").arg(QString::number(totalGb, 'f', 1)));
+    } else {
+        // Fallback read from /proc/meminfo
+        std::ifstream meminfo("/proc/meminfo");
+        if (meminfo.is_open()) {
+            std::string line;
+            while (std::getline(meminfo, line)) {
+                if (line.rfind("MemTotal:", 0) == 0) {
+                    uint64_t kb = 0;
+                    std::sscanf(line.c_str(), "MemTotal: %lu kB", &kb);
+                    double totalGb = (kb * 1024.0) / (1024.0 * 1024.0 * 1024.0);
+                    m_ramLabel->setText(QString("%1 GB RAM").arg(QString::number(totalGb, 'f', 1)));
+                    break;
+                }
+            }
+        }
+    }
 
     // Read total uptime from /proc/uptime
     std::ifstream uptimeFile("/proc/uptime");

@@ -39,13 +39,13 @@ NetworkView::NetworkView(QWidget *parent)
     m_totalRxLabel = new QLabel("⬇ In (RX): 0 B/s", this);
     m_totalRxLabel->setStyleSheet("color: #00d2ff; font-size: 14px; font-weight: bold;");
 
-    m_totalTxLabel = new QLabel("⬆ Ut (TX): 0 B/s", this);
+    m_totalTxLabel = new QLabel("⬆ Out (TX): 0 B/s", this);
     m_totalTxLabel->setStyleSheet("color: #ff0080; font-size: 14px; font-weight: bold;");
 
-    m_cumulRxLabel = new QLabel("Totalt In: 0 MB", this);
+    m_cumulRxLabel = new QLabel("Total In: 0 MB", this);
     m_cumulRxLabel->setStyleSheet("color: #8b949e; font-size: 13px;");
 
-    m_cumulTxLabel = new QLabel("Totalt Ut: 0 MB", this);
+    m_cumulTxLabel = new QLabel("Total Out: 0 MB", this);
     m_cumulTxLabel->setStyleSheet("color: #8b949e; font-size: 13px;");
 
     summaryLayout->addWidget(m_totalRxLabel);
@@ -57,7 +57,7 @@ NetworkView::NetworkView(QWidget *parent)
 
     // Dual Line Network Graph (Cyan = RX, Pink = TX)
     m_networkGraph = new GraphWidget(this);
-    m_networkGraph->setTitle("Nätverkstrafik i realtid (Blå = In, Rosa = Ut)");
+    m_networkGraph->setTitle("Real-Time Network Traffic (Cyan = RX In, Pink = TX Out)");
     m_networkGraph->setUnit("B/s");
     m_networkGraph->setColors(QColor(0, 210, 255), QColor(0, 210, 255, 30));
     m_networkGraph->setSecondaryColors(QColor(255, 0, 128), QColor(255, 0, 128, 25));
@@ -67,7 +67,7 @@ NetworkView::NetworkView(QWidget *parent)
     // Interface breakdown table
     m_ifaceTable = new QTableWidget(this);
     m_ifaceTable->setColumnCount(5);
-    m_ifaceTable->setHorizontalHeaderLabels({"Gränssnitt", "Nedladdning (RX)", "Uppladdning (TX)", "Ackumulerat RX", "Ackumulerat TX"});
+    m_ifaceTable->setHorizontalHeaderLabels({"Interface", "Download (RX)", "Upload (TX)", "Cumulative RX", "Cumulative TX"});
     m_ifaceTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     m_ifaceTable->verticalHeader()->setVisible(false);
     m_ifaceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -82,10 +82,10 @@ void NetworkView::updateNetwork(const NetworkMetrics &net) {
     m_networkGraph->addDualDataPoint(net.totalRxRateBps, net.totalTxRateBps);
 
     m_totalRxLabel->setText(QString("⬇ In (RX): %1").arg(formatRate(net.totalRxRateBps)));
-    m_totalTxLabel->setText(QString("⬆ Ut (TX): %1").arg(formatRate(net.totalTxRateBps)));
+    m_totalTxLabel->setText(QString("⬆ Out (TX): %1").arg(formatRate(net.totalTxRateBps)));
 
-    m_cumulRxLabel->setText(QString("Totalt Mottaget: %1").arg(formatBytes(net.cumulativeRxBytes)));
-    m_cumulTxLabel->setText(QString("Totalt Skickat: %1").arg(formatBytes(net.cumulativeTxBytes)));
+    m_cumulRxLabel->setText(QString("Total Received: %1").arg(formatBytes(net.cumulativeRxBytes)));
+    m_cumulTxLabel->setText(QString("Total Sent: %1").arg(formatBytes(net.cumulativeTxBytes)));
 
     m_ifaceTable->setRowCount(0);
     for (const auto &iface : net.interfaces) {

@@ -21,19 +21,19 @@ MemoryView::MemoryView(QWidget *parent)
     summaryLayout->setContentsMargins(16, 12, 16, 12);
     summaryLayout->setSpacing(20);
 
-    m_totalRamLabel = new QLabel("Totalt RAM: -- GB", this);
+    m_totalRamLabel = new QLabel("Total RAM: -- GB", this);
     m_totalRamLabel->setStyleSheet("color: #00e676; font-size: 14px; font-weight: bold;");
 
-    m_usedRamLabel = new QLabel("Använt: -- GB", this);
+    m_usedRamLabel = new QLabel("Used: -- GB", this);
     m_usedRamLabel->setStyleSheet("color: #e0e6ed; font-size: 13px;");
 
-    m_cachedRamLabel = new QLabel("Buffert/Cache: -- GB", this);
+    m_cachedRamLabel = new QLabel("Buffers/Cache: -- GB", this);
     m_cachedRamLabel->setStyleSheet("color: #8b949e; font-size: 13px;");
 
-    m_swapTotalLabel = new QLabel("Totalt Swap: -- GB", this);
+    m_swapTotalLabel = new QLabel("Total Swap: -- GB", this);
     m_swapTotalLabel->setStyleSheet("color: #ab47bc; font-size: 13px;");
 
-    m_swapUsedLabel = new QLabel("Använd Swap: -- GB", this);
+    m_swapUsedLabel = new QLabel("Used Swap: -- GB", this);
     m_swapUsedLabel->setStyleSheet("color: #8b949e; font-size: 13px;");
 
     summaryLayout->addWidget(m_totalRamLabel);
@@ -46,7 +46,7 @@ MemoryView::MemoryView(QWidget *parent)
 
     // RAM Sparkline Graph
     m_ramGraph = new GraphWidget(this);
-    m_ramGraph->setTitle("RAM-minnesanvändning (%)");
+    m_ramGraph->setTitle("RAM Memory Usage");
     m_ramGraph->setUnit("%");
     m_ramGraph->setColors(QColor(0, 230, 118), QColor(0, 230, 118, 45)); // Emerald Green
     m_ramGraph->setRange(0.0, 100.0, false);
@@ -54,7 +54,7 @@ MemoryView::MemoryView(QWidget *parent)
 
     // Swap Sparkline Graph
     m_swapGraph = new GraphWidget(this);
-    m_swapGraph->setTitle("Swap-minnesanvändning (%)");
+    m_swapGraph->setTitle("Swap Memory Usage");
     m_swapGraph->setUnit("%");
     m_swapGraph->setColors(QColor(171, 71, 188), QColor(171, 71, 188, 45)); // Vibrant Purple
     m_swapGraph->setRange(0.0, 100.0, false);
@@ -72,12 +72,24 @@ void MemoryView::updateMemory(const MemoryMetrics &mem) {
     double swapTotalGb = static_cast<double>(mem.totalSwapBytes) / (1024.0 * 1024.0 * 1024.0);
     double swapUsedGb = static_cast<double>(mem.usedSwapBytes) / (1024.0 * 1024.0 * 1024.0);
 
-    m_totalRamLabel->setText(QString("Totalt RAM: %1 GB").arg(QString::number(totalGb, 'f', 2)));
-    m_usedRamLabel->setText(QString("Använt: %1 GB (%2%)").arg(QString::number(usedGb, 'f', 2)).arg(QString::number(mem.ramUsagePercent, 'f', 1)));
-    m_cachedRamLabel->setText(QString("Buffert/Cache: %1 GB").arg(QString::number(cacheGb, 'f', 2)));
+    QString ramBadgeStr = QString("%1 GB / %2 GB (%3%)")
+        .arg(QString::number(usedGb, 'f', 1))
+        .arg(QString::number(totalGb, 'f', 1))
+        .arg(QString::number(mem.ramUsagePercent, 'f', 1));
+    m_ramGraph->setCustomValueText(ramBadgeStr);
 
-    m_swapTotalLabel->setText(QString("Totalt Swap: %1 GB").arg(QString::number(swapTotalGb, 'f', 2)));
-    m_swapUsedLabel->setText(QString("Använd Swap: %1 GB (%2%)").arg(QString::number(swapUsedGb, 'f', 2)).arg(QString::number(mem.swapUsagePercent, 'f', 1)));
+    QString swapBadgeStr = QString("%1 GB / %2 GB (%3%)")
+        .arg(QString::number(swapUsedGb, 'f', 1))
+        .arg(QString::number(swapTotalGb, 'f', 1))
+        .arg(QString::number(mem.swapUsagePercent, 'f', 1));
+    m_swapGraph->setCustomValueText(swapBadgeStr);
+
+    m_totalRamLabel->setText(QString("Total RAM: %1 GB").arg(QString::number(totalGb, 'f', 1)));
+    m_usedRamLabel->setText(QString("Used: %1 GB (%2%)").arg(QString::number(usedGb, 'f', 1)).arg(QString::number(mem.ramUsagePercent, 'f', 1)));
+    m_cachedRamLabel->setText(QString("Buffers/Cache: %1 GB").arg(QString::number(cacheGb, 'f', 1)));
+
+    m_swapTotalLabel->setText(QString("Total Swap: %1 GB").arg(QString::number(swapTotalGb, 'f', 1)));
+    m_swapUsedLabel->setText(QString("Used Swap: %1 GB (%2%)").arg(QString::number(swapUsedGb, 'f', 1)).arg(QString::number(mem.swapUsagePercent, 'f', 1)));
 }
 
 } // namespace Harbor

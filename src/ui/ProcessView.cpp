@@ -39,7 +39,7 @@ ProcessView::ProcessView(QWidget *parent)
     topLayout->setSpacing(10);
 
     m_searchEdit = new QLineEdit(this);
-    m_searchEdit->setPlaceholderText("🔍 Sök processnamn eller PID...");
+    m_searchEdit->setPlaceholderText("🔍 Search process name or PID...");
     m_searchEdit->setClearButtonEnabled(true);
     m_searchEdit->setStyleSheet(
         "QLineEdit { background-color: #181c26; color: #e0e6ed; border: 1px solid #2b3245; "
@@ -47,14 +47,14 @@ ProcessView::ProcessView(QWidget *parent)
         "QLineEdit:focus { border: 1px solid #00d2ff; }"
     );
 
-    m_terminateBtn = new QPushButton("Avsluta (SIGTERM)", this);
+    m_terminateBtn = new QPushButton("End Task (SIGTERM)", this);
     m_terminateBtn->setStyleSheet(
         "QPushButton { background-color: #2b3245; color: #ffb74d; border: 1px solid #3e4860; "
         "border-radius: 6px; padding: 6px 14px; font-weight: bold; }"
         "QPushButton:hover { background-color: #3b455e; color: #ffa726; }"
     );
 
-    m_killBtn = new QPushButton("Döda! (SIGKILL)", this);
+    m_killBtn = new QPushButton("Force Kill (SIGKILL)", this);
     m_killBtn->setStyleSheet(
         "QPushButton { background-color: #3e1b24; color: #ff5252; border: 1px solid #5c2330; "
         "border-radius: 6px; padding: 6px 14px; font-weight: bold; }"
@@ -70,7 +70,7 @@ ProcessView::ProcessView(QWidget *parent)
     // Process Table Widget
     m_tableWidget = new QTableWidget(this);
     m_tableWidget->setColumnCount(7);
-    m_tableWidget->setHorizontalHeaderLabels({"PID", "Namn", "Användare", "CPU %", "Minne (RAM)", "Status", "Nice"});
+    m_tableWidget->setHorizontalHeaderLabels({"PID", "Name", "User", "CPU %", "Memory (RAM)", "Status", "Nice"});
     m_tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -90,7 +90,7 @@ ProcessView::ProcessView(QWidget *parent)
     mainLayout->addWidget(m_tableWidget);
 
     // Status Footer
-    m_statusLabel = new QLabel("Totalt: 0 processer", this);
+    m_statusLabel = new QLabel("Total: 0 processes", this);
     m_statusLabel->setStyleSheet("color: #7d8590; font-size: 12px;");
     mainLayout->addWidget(m_statusLabel);
 
@@ -154,11 +154,11 @@ void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
         // State
         QString stateStr;
         switch (p.state) {
-            case 'R': stateStr = "Körs (R)"; break;
-            case 'S': stateStr = "Sover (S)"; break;
-            case 'D': stateStr = "I/O Väntar (D)"; break;
+            case 'R': stateStr = "Running (R)"; break;
+            case 'S': stateStr = "Sleeping (S)"; break;
+            case 'D': stateStr = "Disk Sleep (D)"; break;
             case 'Z': stateStr = "Zombie (Z)"; break;
-            case 'T': stateStr = "Stoppad (T)"; break;
+            case 'T': stateStr = "Stopped (T)"; break;
             default: stateStr = QString(p.state); break;
         }
         m_tableWidget->setItem(row, 5, new QTableWidgetItem(stateStr));
@@ -175,7 +175,7 @@ void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
         m_tableWidget->selectRow(targetRowToSelect);
     }
 
-    m_statusLabel->setText(QString("Visar %1 av %2 processer").arg(displayCount).arg(processes.size()));
+    m_statusLabel->setText(QString("Showing %1 of %2 processes").arg(displayCount).arg(processes.size()));
 }
 
 void ProcessView::onSearchTextChanged(const QString &text) {
@@ -205,10 +205,10 @@ void ProcessView::onTerminateSelected() {
     QString name = getSelectedProcessName();
 
     if (ProcessManager::terminateProcess(pid)) {
-        m_statusLabel->setText(QString("Skickade SIGTERM till %1 (PID %2)").arg(name).arg(pid));
+        m_statusLabel->setText(QString("Sent SIGTERM to %1 (PID %2)").arg(name).arg(pid));
         emit processActionTriggered();
     } else {
-        QMessageBox::warning(this, "Fel", QString("Kunde inte avsluta process %1 (PID %2). Saknar du behörighet?").arg(name).arg(pid));
+        QMessageBox::warning(this, "Error", QString("Could not terminate process %1 (PID %2). Permission denied.").arg(name).arg(pid));
     }
 }
 
@@ -217,16 +217,16 @@ void ProcessView::onKillSelected() {
     if (pid <= 0) return;
     QString name = getSelectedProcessName();
 
-    auto reply = QMessageBox::question(this, "Bekräfta Döda Process",
-        QString("Är du säker på att du vill döda (%1) PID %2 omedelbart med SIGKILL?").arg(name).arg(pid),
+    auto reply = QMessageBox::question(this, "Confirm Force Kill",
+        QString("Are you sure you want to force kill (%1) PID %2 immediately with SIGKILL?").arg(name).arg(pid),
         QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
         if (ProcessManager::killProcess(pid)) {
-            m_statusLabel->setText(QString("Tvingade död av %1 (PID %2)").arg(name).arg(pid));
+            m_statusLabel->setText(QString("Force killed %1 (PID %2)").arg(name).arg(pid));
             emit processActionTriggered();
         } else {
-            QMessageBox::warning(this, "Fel", QString("Kunde inte döda process %1 (PID %2).").arg(name).arg(pid));
+            QMessageBox::warning(this, "Error", QString("Could not kill process %1 (PID %2).").arg(name).arg(pid));
         }
     }
 }
@@ -235,7 +235,7 @@ void ProcessView::onPauseSelected() {
     int pid = getSelectedPid();
     if (pid <= 0) return;
     if (ProcessManager::pauseProcess(pid)) {
-        m_statusLabel->setText(QString("Pausade PID %1").arg(pid));
+        m_statusLabel->setText(QString("Paused PID %1").arg(pid));
     }
 }
 
@@ -243,7 +243,7 @@ void ProcessView::onResumeSelected() {
     int pid = getSelectedPid();
     if (pid <= 0) return;
     if (ProcessManager::resumeProcess(pid)) {
-        m_statusLabel->setText(QString("Återupptog PID %1").arg(pid));
+        m_statusLabel->setText(QString("Resumed PID %1").arg(pid));
     }
 }
 
@@ -258,16 +258,16 @@ void ProcessView::onChangeNiceSelected() {
         curNice = m_tableWidget->item(row, 6)->text().toInt();
     }
 
-    int newNice = QInputDialog::getInt(this, "Ändra Nice-värde (Prioritet)",
-        QString("Ange nytt nice-värde för PID %1 (-20 = Högst, 19 = Lägst):").arg(pid),
+    int newNice = QInputDialog::getInt(this, "Change Nice Value (Priority)",
+        QString("Enter new nice value for PID %1 (-20 = Highest Priority, 19 = Lowest Priority):").arg(pid),
         curNice, -20, 19, 1, &ok);
 
     if (ok) {
         if (ProcessManager::setPriority(pid, newNice)) {
-            m_statusLabel->setText(QString("Ändrade nice för PID %1 till %2").arg(pid).arg(newNice));
+            m_statusLabel->setText(QString("Changed nice for PID %1 to %2").arg(pid).arg(newNice));
             emit processActionTriggered();
         } else {
-            QMessageBox::warning(this, "Fel", "Kunde inte ändra nice-värde. För lägre (högre prio) värden krävs sudo/root.");
+            QMessageBox::warning(this, "Error", "Could not change nice value. Lowering nice value requires elevated permissions.");
         }
     }
 }
@@ -282,13 +282,13 @@ void ProcessView::showContextMenu(const QPoint &pos) {
         "QMenu::item:selected { background-color: #00d2ff; color: #0f111a; }"
     );
 
-    menu.addAction("⚡ Avsluta process (SIGTERM)", this, &ProcessView::onTerminateSelected);
-    menu.addAction("💀 Tvinga död (SIGKILL)", this, &ProcessView::onKillSelected);
+    menu.addAction("⚡ End Task (SIGTERM)", this, &ProcessView::onTerminateSelected);
+    menu.addAction("💀 Force Kill (SIGKILL)", this, &ProcessView::onKillSelected);
     menu.addSeparator();
-    menu.addAction("⏸ Pausa process (SIGSTOP)", this, &ProcessView::onPauseSelected);
-    menu.addAction("▶ Återuppta process (SIGCONT)", this, &ProcessView::onResumeSelected);
+    menu.addAction("⏸ Pause Process (SIGSTOP)", this, &ProcessView::onPauseSelected);
+    menu.addAction("▶ Resume Process (SIGCONT)", this, &ProcessView::onResumeSelected);
     menu.addSeparator();
-    menu.addAction("⚖ Ändra prioritet (Nice)", this, &ProcessView::onChangeNiceSelected);
+    menu.addAction("⚖ Change Priority (Nice)", this, &ProcessView::onChangeNiceSelected);
 
     menu.exec(m_tableWidget->viewport()->mapToGlobal(pos));
 }

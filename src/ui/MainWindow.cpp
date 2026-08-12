@@ -63,24 +63,24 @@ MainWindow::MainWindow(QWidget *parent)
     overviewLayout->setSpacing(12);
 
     m_overviewCpuGraph = new GraphWidget(m_overviewTab);
-    m_overviewCpuGraph->setTitle("CPU-belastning (%)");
+    m_overviewCpuGraph->setTitle("CPU Usage (%)");
     m_overviewCpuGraph->setUnit("%");
     m_overviewCpuGraph->setColors(QColor(0, 210, 255), QColor(0, 210, 255, 40));
 
     m_overviewRamGraph = new GraphWidget(m_overviewTab);
-    m_overviewRamGraph->setTitle("RAM-användning (%)");
+    m_overviewRamGraph->setTitle("RAM Usage");
     m_overviewRamGraph->setUnit("%");
     m_overviewRamGraph->setColors(QColor(0, 230, 118), QColor(0, 230, 118, 40));
 
     m_overviewNetGraph = new GraphWidget(m_overviewTab);
-    m_overviewNetGraph->setTitle("Nätverkstrafik (In / Ut)");
+    m_overviewNetGraph->setTitle("Network Traffic (In / Out)");
     m_overviewNetGraph->setUnit("B/s");
     m_overviewNetGraph->setColors(QColor(0, 210, 255), QColor(0, 210, 255, 30));
     m_overviewNetGraph->setSecondaryColors(QColor(255, 0, 128), QColor(255, 0, 128, 25));
     m_overviewNetGraph->setRange(0.0, 1024.0 * 1024.0, true);
 
     m_overviewDiskGraph = new GraphWidget(m_overviewTab);
-    m_overviewDiskGraph->setTitle("Disk I/O Hastighet");
+    m_overviewDiskGraph->setTitle("Disk I/O Speed");
     m_overviewDiskGraph->setUnit("B/s");
     m_overviewDiskGraph->setColors(QColor(255, 183, 77), QColor(255, 183, 77, 35));
     m_overviewDiskGraph->setSecondaryColors(QColor(255, 112, 67), QColor(255, 112, 67, 25));
@@ -106,17 +106,17 @@ MainWindow::MainWindow(QWidget *parent)
     // --- Tab 6: System Info ---
     m_systemInfoView = new SystemInfoView(this);
 
-    m_tabWidget->addTab(m_overviewTab, "📊 Översikt");
-    m_tabWidget->addTab(m_cpuView, "💻 CPU & Kärnor");
-    m_tabWidget->addTab(m_memoryView, "🧠 Minne & Swap");
-    m_tabWidget->addTab(m_networkView, "🌐 Nätverk");
-    m_tabWidget->addTab(m_processView, "⚡ Processer");
-    m_tabWidget->addTab(m_systemInfoView, "ℹ️ Systeminfo");
+    m_tabWidget->addTab(m_overviewTab, "📊 Overview");
+    m_tabWidget->addTab(m_cpuView, "💻 CPU & Cores");
+    m_tabWidget->addTab(m_memoryView, "🧠 Memory & Swap");
+    m_tabWidget->addTab(m_networkView, "🌐 Network");
+    m_tabWidget->addTab(m_processView, "⚡ Processes");
+    m_tabWidget->addTab(m_systemInfoView, "ℹ️ System Info");
 
     mainLayout->addWidget(m_tabWidget, 1);
 
     // Footer
-    m_statusFooter = new QLabel("Systemövervakning igång | Uppdateras varje sekund", this);
+    m_statusFooter = new QLabel("System monitor active | Refreshing every second", this);
     m_statusFooter->setStyleSheet("color: #6e7681; font-size: 11px; margin-top: 4px;");
     mainLayout->addWidget(m_statusFooter);
 
@@ -140,6 +140,15 @@ void MainWindow::onMetricsUpdated() {
     // Update Overview Tab Graphs
     m_overviewCpuGraph->addDataPoint(cpu.totalUsagePercent);
     m_overviewRamGraph->addDataPoint(mem.ramUsagePercent);
+    
+    double totalGb = static_cast<double>(mem.totalRamBytes) / (1024.0 * 1024.0 * 1024.0);
+    double usedGb = static_cast<double>(mem.usedRamBytes) / (1024.0 * 1024.0 * 1024.0);
+    QString ramBadgeStr = QString("%1 GB / %2 GB (%3%)")
+        .arg(QString::number(usedGb, 'f', 1))
+        .arg(QString::number(totalGb, 'f', 1))
+        .arg(QString::number(mem.ramUsagePercent, 'f', 1));
+    m_overviewRamGraph->setCustomValueText(ramBadgeStr);
+
     m_overviewNetGraph->addDualDataPoint(net.totalRxRateBps, net.totalTxRateBps);
     m_overviewDiskGraph->addDualDataPoint(disk.readRateBps, disk.writeRateBps);
 
@@ -148,10 +157,11 @@ void MainWindow::onMetricsUpdated() {
     m_memoryView->updateMemory(mem);
     m_networkView->updateNetwork(net);
     m_processView->updateProcesses(procs);
+    m_systemInfoView->updateSystemInfo(m_collector.systemInfo());
 
     // Top Badges
     m_badgeCpu->setText(QString("CPU: %1%").arg(QString::number(cpu.totalUsagePercent, 'f', 1)));
-    m_badgeRam->setText(QString("RAM: %1%").arg(QString::number(mem.ramUsagePercent, 'f', 1)));
+    m_badgeRam->setText(QString("RAM: %1 GB / %2 GB (%3%)").arg(QString::number(usedGb, 'f', 1)).arg(QString::number(totalGb, 'f', 1)).arg(QString::number(mem.ramUsagePercent, 'f', 1)));
     m_badgeNet->setText(QString("NET: ⬇ %1 / ⬆ %2").arg(formatRateShort(net.totalRxRateBps)).arg(formatRateShort(net.totalTxRateBps)));
 }
 
