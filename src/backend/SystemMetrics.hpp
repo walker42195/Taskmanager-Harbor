@@ -78,12 +78,19 @@ struct DiskPartitionInfo {
     bool isUsbOrRemovable{false};
 };
 
+struct DiskDeviceIo {
+    std::string deviceName; // e.g. nvme0n1, sda, sdb
+    double readRateBps{0.0};
+    double writeRateBps{0.0};
+};
+
 struct DiskMetrics {
     double readRateBps{0.0};
     double writeRateBps{0.0};
     uint64_t cumulativeReadBytes{0};
     uint64_t cumulativeWriteBytes{0};
     std::vector<DiskPartitionInfo> partitions;
+    std::vector<DiskDeviceIo> devices;
 };
 
 struct ProcessInfo {

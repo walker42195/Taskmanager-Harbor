@@ -65,6 +65,7 @@ private:
     uint64_t m_lastTotalJiffies{0};
     uint64_t m_lastDiskReadBytes{0};
     uint64_t m_lastDiskWriteBytes{0};
+    std::unordered_map<std::string, std::pair<uint64_t, uint64_t>> m_lastPerDiskIo;
     bool m_firstRun{true};
 };
 

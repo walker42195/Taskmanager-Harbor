@@ -210,12 +210,13 @@ void MetricsCollector::readNetwork() {
 }
 
 void MetricsCollector::readDisk() {
-    // 1. Read Disk I/O Rates from /proc/diskstats
+    // 1. Read Disk I/O Rates from /proc/diskstats (Total & Per-Device)
     std::ifstream file("/proc/diskstats");
     if (file.is_open()) {
         std::string line;
         uint64_t totalReadSectors = 0;
         uint64_t totalWriteSectors = 0;
+        std::vector<DiskDeviceIo> devList;
 
         while (std::getline(file, line)) {
             std::istringstream ss(line);
@@ -223,7 +224,12 @@ void MetricsCollector::readDisk() {
             std::string devName;
             ss >> major >> minor >> devName;
 
-            if (devName.rfind("sd", 0) == 0 || devName.rfind("nvme", 0) == 0 || devName.rfind("vd", 0) == 0) {
+            // Only filter root physical disk devices (e.g. sda, sdb, sdc, nvme0n1) skip partition numbers (sda1, nvme0n1p1)
+            bool isRootDevice = false;
+            if (devName.rfind("sd", 0) == 0 && std::isalpha(devName.back())) isRootDevice = true; // sda, sdb
+            if (devName.rfind("nvme", 0) == 0 && devName.find('p') == std::string::npos) isRootDevice = true; // nvme0n1
+
+            if (isRootDevice) {
                 uint64_t readsCompleted = 0, readsMerged = 0, readSectors = 0, timeReading = 0;
                 uint64_t writesCompleted = 0, writesMerged = 0, writeSectors = 0;
                 ss >> readsCompleted >> readsMerged >> readSectors >> timeReading
@@ -231,6 +237,26 @@ void MetricsCollector::readDisk() {
 
                 totalReadSectors += readSectors;
                 totalWriteSectors += writeSectors;
+
+                uint64_t devReadBytes = readSectors * 512;
+                uint64_t devWriteBytes = writeSectors * 512;
+
+                DiskDeviceIo devIo;
+                devIo.deviceName = devName;
+
+                if (!m_firstRun && m_lastPerDiskIo.count(devName)) {
+                    uint64_t oldRead = m_lastPerDiskIo[devName].first;
+                    uint64_t oldWrite = m_lastPerDiskIo[devName].second;
+
+                    if (devReadBytes >= oldRead) {
+                        devIo.readRateBps = (devReadBytes - oldRead) / m_lastSampleIntervalSec;
+                    }
+                    if (devWriteBytes >= oldWrite) {
+                        devIo.writeRateBps = (devWriteBytes - oldWrite) / m_lastSampleIntervalSec;
+                    }
+                }
+                m_lastPerDiskIo[devName] = { devReadBytes, devWriteBytes };
+                devList.push_back(devIo);
             }
         }
 
@@ -249,6 +275,7 @@ void MetricsCollector::readDisk() {
         m_lastDiskWriteBytes = writeBytes;
         m_disk.cumulativeReadBytes = readBytes;
         m_disk.cumulativeWriteBytes = writeBytes;
+        m_disk.devices = devList;
     }
 
     // 2. Read Mounted Filesystems from /proc/mounts
