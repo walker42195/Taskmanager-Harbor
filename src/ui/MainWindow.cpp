@@ -141,9 +141,21 @@ MainWindow::MainWindow(QWidget *parent)
     mainLayout->addWidget(m_stackedWidget, 1);
 
     // Footer
-    m_statusFooter = new QLabel("System monitor active | Refreshing every second", this);
-    m_statusFooter->setStyleSheet("color: #6e7681; font-size: 11px; margin-top: 4px;");
-    mainLayout->addWidget(m_statusFooter);
+    auto *footerWidget = new QWidget(this);
+    auto *footerLayout = new QHBoxLayout(footerWidget);
+    footerLayout->setContentsMargins(4, 2, 4, 2);
+
+    m_statusFooter = new QLabel("System monitor active | Refreshing every second", footerWidget);
+    m_statusFooter->setStyleSheet("color: #6e7681; font-size: 11px;");
+
+    auto *copyrightLabel = new QLabel("© 2026 taskmanager-harbor · novabase.se", footerWidget);
+    copyrightLabel->setStyleSheet("color: #00d2ff; font-size: 11px; font-weight: bold;");
+
+    footerLayout->addWidget(m_statusFooter);
+    footerLayout->addStretch(1);
+    footerLayout->addWidget(copyrightLabel);
+
+    mainLayout->addWidget(footerWidget);
 
     setCentralWidget(centralWidget);
 
