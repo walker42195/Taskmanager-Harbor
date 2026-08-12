@@ -1,7 +1,9 @@
 #include "SystemInfoView.hpp"
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QGridLayout>
 #include <QGroupBox>
+#include <QIcon>
 #include <fstream>
 
 namespace Harbor {
@@ -30,12 +32,24 @@ SystemInfoView::SystemInfoView(QWidget *parent)
     heroCard->setStyleSheet("QWidget { background-color: #181c26; border: 1px solid #00d2ff; border-radius: 10px; padding: 12px; }");
     auto *heroLayout = new QVBoxLayout(heroCard);
 
-    auto *titleLbl = new QLabel("⛵ Taskmanager-Harbor", heroCard);
+    auto *heroHeaderLayout = new QHBoxLayout();
+    heroHeaderLayout->setSpacing(10);
+
+    auto *heroIconLabel = new QLabel(heroCard);
+    heroIconLabel->setPixmap(QIcon(":/assets/icons/logo.svg").pixmap(32, 32));
+    heroIconLabel->setStyleSheet("border: none;");
+
+    auto *titleLbl = new QLabel("Taskmanager-Harbor", heroCard);
     titleLbl->setStyleSheet("color: #00d2ff; font-size: 22px; font-weight: bold; border: none;");
+
+    heroHeaderLayout->addWidget(heroIconLabel);
+    heroHeaderLayout->addWidget(titleLbl);
+    heroHeaderLayout->addStretch(1);
+
     auto *subTitleLbl = new QLabel("High-Performance System Monitor for Linux", heroCard);
     subTitleLbl->setStyleSheet("color: #8b949e; font-size: 13px; border: none;");
 
-    heroLayout->addWidget(titleLbl);
+    heroLayout->addLayout(heroHeaderLayout);
     heroLayout->addWidget(subTitleLbl);
     mainLayout->addWidget(heroCard);
 

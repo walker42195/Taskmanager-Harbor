@@ -2,7 +2,7 @@
 
 set -e
 
-echo "⛵ Installing Taskmanager-Harbor..."
+echo "Taskmanager-Harbor Installation Script..."
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"

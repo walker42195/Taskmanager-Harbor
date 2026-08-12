@@ -1,4 +1,4 @@
-# ⛵ Taskmanager-Harbor
+# Taskmanager-Harbor
 
 **Taskmanager-Harbor** is a modern, high-performance, dark-themed System Monitor & Task Manager for Linux (specifically optimized for Arch Linux), written in **C++20** and **Qt 6**.
 
