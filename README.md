@@ -43,25 +43,37 @@ Designed to be sleeker, faster, and more detailed than standard Linux system mon
 
 ---
 
-## 🏗️ Building & Installation
+## 🏗️ Installation & Usage
 
-### Prerequisites (Arch Linux)
+### Option 1: Quick Install (Pre-compiled Binary — No Compilation Needed!)
 
-Install the required build tools and Qt 6 libraries:
+You can download the pre-compiled ready-to-run release directly from [GitHub Releases](https://github.com/walker42195/Taskmanager-Harbor/releases/latest):
+
+```bash
+# 1. Download and extract the latest pre-compiled release
+wget https://github.com/walker42195/Taskmanager-Harbor/releases/download/v1.0.0/Taskmanager-Harbor-v1.0.0-x86_64.tar.gz
+tar -xzvf Taskmanager-Harbor-v1.0.0-x86_64.tar.gz
+
+# 2. Run the quick installer (installs binary & menu launcher)
+./install.sh
+```
+
+---
+
+### Option 2: Build from Source (Arch Linux / Generic Linux)
+
+Install build dependencies:
 
 ```bash
 sudo pacman -S gcc cmake ninja qt6-base qt6-svg git
 ```
 
-### Easy Installation (Recommended)
-
-Run the included `install.sh` script to build the executable, install the custom SVG icon, and register the launcher in your application menu:
+Clone and build:
 
 ```bash
 git clone https://github.com/walker42195/Taskmanager-Harbor.git
 cd Taskmanager-Harbor
 
-chmod +x install.sh
 ./install.sh
 ```
 
