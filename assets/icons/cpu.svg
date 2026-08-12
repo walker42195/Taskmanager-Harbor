@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect x="16" y="16" width="32" height="32" rx="6" fill="#141824" stroke="#00d2ff" stroke-width="3.5"/>
+  <rect x="24" y="24" width="16" height="16" rx="3" fill="#00d2ff" opacity="0.8"/>
+  
+  <!-- CPU Pins Top & Bottom -->
+  <path d="M 22 8 L 22 16 M 32 8 L 32 16 M 42 8 L 42 16" stroke="#00ffff" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 22 48 L 22 56 M 32 48 L 32 56 M 42 48 L 42 56" stroke="#00ffff" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- CPU Pins Left & Right -->
+  <path d="M 8 22 L 16 22 M 8 32 L 16 32 M 8 42 L 16 42" stroke="#00ffff" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 48 22 L 56 22 M 48 32 L 56 32 M 48 42 L 56 42" stroke="#00ffff" stroke-width="3" stroke-linecap="round"/>
+</svg>

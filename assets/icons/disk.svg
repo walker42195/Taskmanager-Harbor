@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Hard Drive Body -->
+  <rect x="12" y="10" width="40" height="44" rx="6" fill="#141824" stroke="#ffb74d" stroke-width="3.5"/>
+  
+  <!-- Platter Circle -->
+  <circle cx="32" cy="28" r="12" fill="none" stroke="#ffb74d" stroke-width="3"/>
+  <circle cx="32" cy="28" r="4" fill="#ffb74d"/>
+  
+  <!-- Drive Head Arm -->
+  <line x1="32" y1="28" x2="42" y2="38" stroke="#ff7043" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Bottom LED Lights -->
+  <circle cx="20" cy="46" r="2.5" fill="#00e676"/>
+  <circle cx="28" cy="46" r="2.5" fill="#00d2ff"/>
+</svg>

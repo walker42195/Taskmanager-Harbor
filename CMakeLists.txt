@@ -8,7 +8,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
 
 set(SOURCES
     src/main.cpp
@@ -38,8 +38,12 @@ set(HEADERS
     src/ui/MainWindow.hpp
 )
 
-add_executable(Taskmanager-Harbor ${SOURCES} ${HEADERS})
+set(RESOURCES
+    resources.qrc
+)
 
-target_link_libraries(Taskmanager-Harbor PRIVATE Qt6::Widgets)
+add_executable(Taskmanager-Harbor ${SOURCES} ${HEADERS} ${RESOURCES})
+
+target_link_libraries(Taskmanager-Harbor PRIVATE Qt6::Widgets Qt6::Svg)
 
 target_include_directories(Taskmanager-Harbor PRIVATE src)

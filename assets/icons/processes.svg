@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Energy Bolt & Process Gear -->
+  <path d="M 36 8 L 18 34 L 32 34 L 26 56 L 46 28 L 32 28 Z" 
+        fill="url(#yellowGrad)" stroke="#ffab00" stroke-width="2.5" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="yellowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffff00"/>
+      <stop offset="100%" stop-color="#ff9100"/>
+    </linearGradient>
+  </defs>
+</svg>

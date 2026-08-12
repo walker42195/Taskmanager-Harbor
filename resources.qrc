@@ -1,0 +1,12 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/">
+    <file>assets/icons/logo.svg</file>
+    <file>assets/icons/overview.svg</file>
+    <file>assets/icons/cpu.svg</file>
+    <file>assets/icons/memory.svg</file>
+    <file>assets/icons/network.svg</file>
+    <file>assets/icons/disk.svg</file>
+    <file>assets/icons/processes.svg</file>
+    <file>assets/icons/system.svg</file>
+</qresource>
+</RCC>

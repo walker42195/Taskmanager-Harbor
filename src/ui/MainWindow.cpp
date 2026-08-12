@@ -4,6 +4,7 @@
 #include <QGridLayout>
 #include <QApplication>
 #include <QDateTime>
+#include <QIcon>
 
 namespace Harbor {
 
@@ -17,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setWindowTitle("Taskmanager-Harbor — System Monitor");
+    setWindowIcon(QIcon(":/assets/icons/logo.svg"));
     resize(1100, 750);
     setMinimumSize(900, 600);
 
@@ -32,8 +34,12 @@ MainWindow::MainWindow(QWidget *parent)
     headerWidget->setObjectName("topHeader");
     auto *headerLayout = new QHBoxLayout(headerWidget);
     headerLayout->setContentsMargins(12, 8, 12, 8);
+    headerLayout->setSpacing(10);
 
-    auto *titleLabel = new QLabel("⛵ Taskmanager-Harbor", headerWidget);
+    auto *logoIconLabel = new QLabel(headerWidget);
+    logoIconLabel->setPixmap(QIcon(":/assets/icons/logo.svg").pixmap(26, 26));
+
+    auto *titleLabel = new QLabel("Taskmanager-Harbor", headerWidget);
     titleLabel->setStyleSheet("font-size: 17px; font-weight: bold; color: #00d2ff;");
 
     m_badgeCpu = new QLabel("CPU: 0%", headerWidget);
@@ -45,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_badgeNet = new QLabel("NET: 0 B/s", headerWidget);
     m_badgeNet->setStyleSheet("background-color: #2b1f2e; color: #ff0080; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px;");
 
+    headerLayout->addWidget(logoIconLabel);
     headerLayout->addWidget(titleLabel);
     headerLayout->addStretch(1);
     headerLayout->addWidget(m_badgeCpu);
@@ -55,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Main Tab Widget
     m_tabWidget = new QTabWidget(this);
+    m_tabWidget->setIconSize(QSize(20, 20));
 
     // --- Tab 1: Overview Grid ---
     m_overviewTab = new QWidget();
@@ -91,31 +99,22 @@ MainWindow::MainWindow(QWidget *parent)
     overviewLayout->addWidget(m_overviewNetGraph, 1, 0);
     overviewLayout->addWidget(m_overviewDiskGraph, 1, 1);
 
-    // --- Tab 2: CPU View ---
+    // --- Detail Views ---
     m_cpuView = new CpuView(this);
-
-    // --- Tab 3: Memory View ---
     m_memoryView = new MemoryView(this);
-
-    // --- Tab 4: Network View ---
     m_networkView = new NetworkView(this);
-
-    // --- Tab 5: Disk View ---
     m_diskView = new DiskView(this);
-
-    // --- Tab 6: Process View ---
     m_processView = new ProcessView(this);
-
-    // --- Tab 7: System Info ---
     m_systemInfoView = new SystemInfoView(this);
 
-    m_tabWidget->addTab(m_overviewTab, "📊 Overview");
-    m_tabWidget->addTab(m_cpuView, "💻 CPU & Cores");
-    m_tabWidget->addTab(m_memoryView, "🧠 Memory & Swap");
-    m_tabWidget->addTab(m_networkView, "🌐 Network");
-    m_tabWidget->addTab(m_diskView, "💾 Disks & Storage");
-    m_tabWidget->addTab(m_processView, "⚡ Processes");
-    m_tabWidget->addTab(m_systemInfoView, "ℹ️ System Info");
+    // Set Tabs with Custom Vector Icons
+    m_tabWidget->addTab(m_overviewTab, QIcon(":/assets/icons/overview.svg"), "Overview");
+    m_tabWidget->addTab(m_cpuView, QIcon(":/assets/icons/cpu.svg"), "CPU & Cores");
+    m_tabWidget->addTab(m_memoryView, QIcon(":/assets/icons/memory.svg"), "Memory & Swap");
+    m_tabWidget->addTab(m_networkView, QIcon(":/assets/icons/network.svg"), "Network");
+    m_tabWidget->addTab(m_diskView, QIcon(":/assets/icons/disk.svg"), "Disks & Storage");
+    m_tabWidget->addTab(m_processView, QIcon(":/assets/icons/processes.svg"), "Processes");
+    m_tabWidget->addTab(m_systemInfoView, QIcon(":/assets/icons/system.svg"), "System Info");
 
     mainLayout->addWidget(m_tabWidget, 1);
 
