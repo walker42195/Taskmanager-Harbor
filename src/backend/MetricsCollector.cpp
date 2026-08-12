@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <pwd.h>
 
 namespace fs = std::filesystem;
@@ -207,47 +208,93 @@ void MetricsCollector::readNetwork() {
 }
 
 void MetricsCollector::readDisk() {
+    // 1. Read Disk I/O Rates from /proc/diskstats
     std::ifstream file("/proc/diskstats");
-    if (!file.is_open()) return;
+    if (file.is_open()) {
+        std::string line;
+        uint64_t totalReadSectors = 0;
+        uint64_t totalWriteSectors = 0;
 
-    std::string line;
-    uint64_t totalReadSectors = 0;
-    uint64_t totalWriteSectors = 0;
+        while (std::getline(file, line)) {
+            std::istringstream ss(line);
+            int major = 0, minor = 0;
+            std::string devName;
+            ss >> major >> minor >> devName;
 
-    while (std::getline(file, line)) {
-        std::istringstream ss(line);
-        int major = 0, minor = 0;
-        std::string devName;
-        ss >> major >> minor >> devName;
+            if (devName.rfind("sd", 0) == 0 || devName.rfind("nvme", 0) == 0 || devName.rfind("vd", 0) == 0) {
+                uint64_t readsCompleted = 0, readsMerged = 0, readSectors = 0, timeReading = 0;
+                uint64_t writesCompleted = 0, writesMerged = 0, writeSectors = 0;
+                ss >> readsCompleted >> readsMerged >> readSectors >> timeReading
+                   >> writesCompleted >> writesMerged >> writeSectors;
 
-        // Filter for physical drives like sda, nvme0n1, etc.
-        if (devName.rfind("sd", 0) == 0 || devName.rfind("nvme", 0) == 0 || devName.rfind("vd", 0) == 0) {
-            // Filter partitions (e.g. sda1, nvme0n1p1) if parent disk exists, or count sectors
-            uint64_t readsCompleted = 0, readsMerged = 0, readSectors = 0, timeReading = 0;
-            uint64_t writesCompleted = 0, writesMerged = 0, writeSectors = 0;
-            ss >> readsCompleted >> readsMerged >> readSectors >> timeReading
-               >> writesCompleted >> writesMerged >> writeSectors;
-
-            totalReadSectors += readSectors;
-            totalWriteSectors += writeSectors;
+                totalReadSectors += readSectors;
+                totalWriteSectors += writeSectors;
+            }
         }
+
+        uint64_t readBytes = totalReadSectors * 512;
+        uint64_t writeBytes = totalWriteSectors * 512;
+
+        if (!m_firstRun && m_lastDiskReadBytes > 0) {
+            if (readBytes >= m_lastDiskReadBytes) {
+                m_disk.readRateBps = (readBytes - m_lastDiskReadBytes) / m_lastSampleIntervalSec;
+            }
+            if (writeBytes >= m_lastDiskWriteBytes) {
+                m_disk.writeRateBps = (writeBytes - m_lastDiskWriteBytes) / m_lastSampleIntervalSec;
+            }
+        }
+        m_lastDiskReadBytes = readBytes;
+        m_lastDiskWriteBytes = writeBytes;
+        m_disk.cumulativeReadBytes = readBytes;
+        m_disk.cumulativeWriteBytes = writeBytes;
     }
 
-    uint64_t readBytes = totalReadSectors * 512;
-    uint64_t writeBytes = totalWriteSectors * 512;
+    // 2. Read Mounted Filesystems from /proc/mounts
+    std::ifstream mountsFile("/proc/mounts");
+    if (mountsFile.is_open()) {
+        std::string line;
+        std::vector<DiskPartitionInfo> newPartitions;
 
-    if (!m_firstRun && m_lastDiskReadBytes > 0) {
-        if (readBytes >= m_lastDiskReadBytes) {
-            m_disk.readRateBps = (readBytes - m_lastDiskReadBytes) / m_lastSampleIntervalSec;
+        while (std::getline(mountsFile, line)) {
+            std::istringstream ss(line);
+            std::string dev, mountPoint, fsType;
+            ss >> dev >> mountPoint >> fsType;
+
+            // Only interested in real block devices (/dev/sd*, /dev/nvme*, /dev/mapper/*)
+            if (dev.rfind("/dev/sd", 0) != 0 && dev.rfind("/dev/nvme", 0) != 0 && dev.rfind("/dev/mapper", 0) != 0) {
+                continue;
+            }
+
+            // Skip swap mounts or pseudo mounts
+            if (fsType == "swap" || fsType == "squashfs") continue;
+
+            struct statvfs stat;
+            if (statvfs(mountPoint.c_str(), &stat) == 0 && stat.f_blocks > 0) {
+                DiskPartitionInfo part;
+                part.device = dev;
+                part.mountPoint = mountPoint;
+                part.fsType = fsType;
+
+                part.totalBytes = static_cast<uint64_t>(stat.f_blocks) * stat.f_frsize;
+                part.freeBytes = static_cast<uint64_t>(stat.f_bfree) * stat.f_frsize;
+                part.availableBytes = static_cast<uint64_t>(stat.f_bavail) * stat.f_frsize;
+                part.usedBytes = (part.totalBytes > part.freeBytes) ? (part.totalBytes - part.freeBytes) : 0;
+
+                if (part.totalBytes > 0) {
+                    part.usagePercent = (100.0 * part.usedBytes) / part.totalBytes;
+                }
+
+                // Check if removable/USB (e.g., mounted under /run/media, /media, /mnt/usb, or removable flag)
+                if (mountPoint.rfind("/run/media", 0) == 0 || mountPoint.rfind("/media", 0) == 0 ||
+                    dev.find("usb") != std::string::npos) {
+                    part.isUsbOrRemovable = true;
+                }
+
+                newPartitions.push_back(part);
+            }
         }
-        if (writeBytes >= m_lastDiskWriteBytes) {
-            m_disk.writeRateBps = (writeBytes - m_lastDiskWriteBytes) / m_lastSampleIntervalSec;
-        }
+        m_disk.partitions = newPartitions;
     }
-    m_lastDiskReadBytes = readBytes;
-    m_lastDiskWriteBytes = writeBytes;
-    m_disk.cumulativeReadBytes = readBytes;
-    m_disk.cumulativeWriteBytes = writeBytes;
 }
 
 void MetricsCollector::readProcesses() {

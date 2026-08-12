@@ -100,16 +100,20 @@ MainWindow::MainWindow(QWidget *parent)
     // --- Tab 4: Network View ---
     m_networkView = new NetworkView(this);
 
-    // --- Tab 5: Process View ---
+    // --- Tab 5: Disk View ---
+    m_diskView = new DiskView(this);
+
+    // --- Tab 6: Process View ---
     m_processView = new ProcessView(this);
 
-    // --- Tab 6: System Info ---
+    // --- Tab 7: System Info ---
     m_systemInfoView = new SystemInfoView(this);
 
     m_tabWidget->addTab(m_overviewTab, "📊 Overview");
     m_tabWidget->addTab(m_cpuView, "💻 CPU & Cores");
     m_tabWidget->addTab(m_memoryView, "🧠 Memory & Swap");
     m_tabWidget->addTab(m_networkView, "🌐 Network");
+    m_tabWidget->addTab(m_diskView, "💾 Disks & Storage");
     m_tabWidget->addTab(m_processView, "⚡ Processes");
     m_tabWidget->addTab(m_systemInfoView, "ℹ️ System Info");
 
@@ -156,6 +160,7 @@ void MainWindow::onMetricsUpdated() {
     m_cpuView->updateCpu(cpu);
     m_memoryView->updateMemory(mem);
     m_networkView->updateNetwork(net);
+    m_diskView->updateDisk(disk);
     m_processView->updateProcesses(procs);
     m_systemInfoView->updateSystemInfo(m_collector.systemInfo());
 

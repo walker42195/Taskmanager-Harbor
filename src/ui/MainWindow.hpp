@@ -8,6 +8,7 @@
 #include "ui/CpuView.hpp"
 #include "ui/MemoryView.hpp"
 #include "ui/NetworkView.hpp"
+#include "ui/DiskView.hpp"
 #include "ui/ProcessView.hpp"
 #include "ui/SystemInfoView.hpp"
 
@@ -41,6 +42,7 @@ private:
     CpuView *m_cpuView;
     MemoryView *m_memoryView;
     NetworkView *m_networkView;
+    DiskView *m_diskView;
     ProcessView *m_processView;
     SystemInfoView *m_systemInfoView;
 

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Taskmanager-Harbor
+GenericName=System Monitor
+Comment=High-Performance C++ & Qt6 System Monitor for Linux
+Exec=taskmanager-harbor
+Icon=taskmanager-harbor
+Terminal=false
+Type=Application
+Categories=System;Monitor;Utility;Qt;
+Keywords=task;manager;system;monitor;cpu;ram;process;disk;network;

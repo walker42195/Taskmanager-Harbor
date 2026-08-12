@@ -19,6 +19,7 @@ set(SOURCES
     src/ui/CpuView.cpp
     src/ui/MemoryView.cpp
     src/ui/NetworkView.cpp
+    src/ui/DiskView.cpp
     src/ui/SystemInfoView.cpp
     src/ui/MainWindow.cpp
 )
@@ -32,6 +33,7 @@ set(HEADERS
     src/ui/CpuView.hpp
     src/ui/MemoryView.hpp
     src/ui/NetworkView.hpp
+    src/ui/DiskView.hpp
     src/ui/SystemInfoView.hpp
     src/ui/MainWindow.hpp
 )

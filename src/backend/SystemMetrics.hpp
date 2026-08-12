@@ -66,11 +66,24 @@ struct NetworkMetrics {
     std::vector<NetworkInterfaceInfo> interfaces;
 };
 
+struct DiskPartitionInfo {
+    std::string device;       // e.g. /dev/nvme0n1p2 or /dev/sdb1
+    std::string mountPoint;   // e.g. / or /run/media/user/USB
+    std::string fsType;       // e.g. ext4, btrfs, vfat
+    uint64_t totalBytes{0};
+    uint64_t freeBytes{0};
+    uint64_t availableBytes{0};
+    uint64_t usedBytes{0};
+    double usagePercent{0.0};
+    bool isUsbOrRemovable{false};
+};
+
 struct DiskMetrics {
     double readRateBps{0.0};
     double writeRateBps{0.0};
     uint64_t cumulativeReadBytes{0};
     uint64_t cumulativeWriteBytes{0};
+    std::vector<DiskPartitionInfo> partitions;
 };
 
 struct ProcessInfo {
