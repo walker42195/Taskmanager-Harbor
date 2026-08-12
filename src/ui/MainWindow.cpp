@@ -127,8 +127,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     setCentralWidget(centralWidget);
 
-    // Connect Collector
+    // Connect Collector & Tab Switching
     connect(&m_collector, &MetricsCollector::metricsUpdated, this, &MainWindow::onMetricsUpdated);
+    connect(m_tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onMetricsUpdated);
     connect(m_applicationsView, &ApplicationsView::appActionTriggered, &m_collector, &MetricsCollector::updateAll);
     connect(m_processView, &ProcessView::processActionTriggered, &m_collector, &MetricsCollector::updateAll);
 
@@ -141,10 +142,8 @@ void MainWindow::onMetricsUpdated() {
     const auto &mem = m_collector.memoryMetrics();
     const auto &net = m_collector.networkMetrics();
     const auto &disk = m_collector.diskMetrics();
-    const auto &procs = m_collector.processList();
-    const auto &apps = m_collector.applicationGroups();
 
-    // Update Overview Tab Graphs
+    // Always update Overview Tab Sparkline Data Buffers & Top Badges
     m_overviewCpuGraph->addDataPoint(cpu.totalUsagePercent);
     m_overviewRamGraph->addDataPoint(mem.ramUsagePercent);
     
@@ -159,19 +158,38 @@ void MainWindow::onMetricsUpdated() {
     m_overviewNetGraph->addDualDataPoint(net.totalRxRateBps, net.totalTxRateBps);
     m_overviewDiskGraph->addDualDataPoint(disk.readRateBps, disk.writeRateBps);
 
-    // Update Detail Views
-    m_applicationsView->updateApplications(apps);
-    m_cpuView->updateCpu(cpu);
-    m_memoryView->updateMemory(mem);
-    m_networkView->updateNetwork(net);
-    m_diskView->updateDisk(disk);
-    m_processView->updateProcesses(procs);
-    m_systemInfoView->updateSystemInfo(m_collector.systemInfo());
-
     // Top Badges
     m_badgeCpu->setText(QString("CPU: %1%").arg(QString::number(cpu.totalUsagePercent, 'f', 1)));
     m_badgeRam->setText(QString("RAM: %1 GB / %2 GB (%3%)").arg(QString::number(usedGb, 'f', 1)).arg(QString::number(totalGb, 'f', 1)).arg(QString::number(mem.ramUsagePercent, 'f', 1)));
     m_badgeNet->setText(QString("NET: ⬇ %1 / ⬆ %2").arg(formatRateShort(net.totalRxRateBps)).arg(formatRateShort(net.totalTxRateBps)));
+
+    // LAZY TAB UPDATES: Only update the view that is currently selected!
+    int currentTab = m_tabWidget->currentIndex();
+    switch (currentTab) {
+        case 0: // Overview (already updated sparklines above)
+            break;
+        case 1: // Applications
+            m_applicationsView->updateApplications(m_collector.applicationGroups());
+            break;
+        case 2: // CPU
+            m_cpuView->updateCpu(cpu);
+            break;
+        case 3: // Memory
+            m_memoryView->updateMemory(mem);
+            break;
+        case 4: // Network
+            m_networkView->updateNetwork(net);
+            break;
+        case 5: // Disks
+            m_diskView->updateDisk(disk);
+            break;
+        case 6: // Processes
+            m_processView->updateProcesses(m_collector.processList());
+            break;
+        case 7: // System Info
+            m_systemInfoView->updateSystemInfo(m_collector.systemInfo());
+            break;
+    }
 }
 
 void MainWindow::applyDarkStyleSheet() {

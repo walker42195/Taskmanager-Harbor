@@ -111,6 +111,7 @@ void ApplicationsView::updateApplications(const std::vector<ApplicationGroup> &a
 
     QString selectedAppName = getSelectedAppName();
 
+    m_tableWidget->setUpdatesEnabled(false);
     m_tableWidget->setSortingEnabled(false);
     m_tableWidget->setRowCount(0);
 
@@ -133,8 +134,13 @@ void ApplicationsView::updateApplications(const std::vector<ApplicationGroup> &a
             targetRowToSelect = row;
         }
 
-        // App Name Item with System Theme Icon fallback
-        QIcon appIcon = QIcon::fromTheme(QString::fromStdString(app.iconName), QIcon(":/assets/icons/applications.svg"));
+        // App Name Item with Cached Theme Icon
+        QString iconKey = QString::fromStdString(app.iconName);
+        if (!m_iconCache.count(iconKey)) {
+            m_iconCache[iconKey] = QIcon::fromTheme(iconKey, QIcon(":/assets/icons/applications.svg"));
+        }
+        QIcon appIcon = m_iconCache[iconKey];
+
         auto *nameItem = new QTableWidgetItem(appIcon, nameStr);
         nameItem->setFont(QFont("Cantarell", 10, QFont::DemiBold));
         nameItem->setData(Qt::UserRole, QString::fromStdString(app.displayName));
@@ -150,13 +156,13 @@ void ApplicationsView::updateApplications(const std::vector<ApplicationGroup> &a
         auto *cpuItem = new AppNumericItem(app.totalCpuPercent, cpuStr);
         if (app.totalCpuPercent > 40.0) cpuItem->setForeground(QColor(255, 82, 82));
         else if (app.totalCpuPercent > 10.0) cpuItem->setForeground(QColor(255, 183, 77));
-        m_tableWidget->setItem(row, 2, cpuItem);
+        m_tableWidget->setItem(row, 3, cpuItem);
 
         // Memory (RAM)
         double ramMb = static_cast<double>(app.totalRssBytes) / (1024.0 * 1024.0);
         auto *memItem = new AppNumericItem(ramMb, formatAppRam(app.totalRssBytes));
         memItem->setForeground(QColor(0, 230, 118));
-        m_tableWidget->setItem(row, 3, memItem);
+        m_tableWidget->setItem(row, 2, memItem);
 
         // User
         m_tableWidget->setItem(row, 4, new QTableWidgetItem(QString::fromStdString(app.user)));
@@ -170,6 +176,7 @@ void ApplicationsView::updateApplications(const std::vector<ApplicationGroup> &a
         m_tableWidget->selectRow(targetRowToSelect);
     }
 
+    m_tableWidget->setUpdatesEnabled(true);
     m_statusLabel->setText(QString("Showing %1 active applications").arg(displayCount));
 }
 

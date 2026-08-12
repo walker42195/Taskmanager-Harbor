@@ -41,6 +41,7 @@ private:
 
     std::vector<ApplicationGroup> m_cachedApps;
     QString m_filterText;
+    std::unordered_map<QString, QIcon> m_iconCache;
 };
 
 } // namespace Harbor

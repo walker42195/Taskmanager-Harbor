@@ -106,6 +106,7 @@ void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
 
     int selectedPid = getSelectedPid();
 
+    m_tableWidget->setUpdatesEnabled(false);
     m_tableWidget->setSortingEnabled(false);
     m_tableWidget->setRowCount(0);
 
@@ -175,6 +176,7 @@ void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
         m_tableWidget->selectRow(targetRowToSelect);
     }
 
+    m_tableWidget->setUpdatesEnabled(true);
     m_statusLabel->setText(QString("Showing %1 of %2 processes").arg(displayCount).arg(processes.size()));
 }
 
