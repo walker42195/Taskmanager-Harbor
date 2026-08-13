@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 project(Taskmanager-Harbor VERSION 1.0.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+if(MSVC)
+    set(CMAKE_CXX_STANDARD 17)
+    add_compile_definitions(_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
+else()
+    set(CMAKE_CXX_STANDARD 20)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_AUTOMOC ON)
