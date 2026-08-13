@@ -19,6 +19,7 @@ set(SOURCES
     src/ui/ApplicationsView.cpp
     src/ui/ProcessView.cpp
     src/ui/CpuView.cpp
+    src/ui/GpuView.cpp
     src/ui/MemoryView.cpp
     src/ui/NetworkView.cpp
     src/ui/DiskView.cpp
@@ -35,6 +36,7 @@ set(HEADERS
     src/ui/ApplicationsView.hpp
     src/ui/ProcessView.hpp
     src/ui/CpuView.hpp
+    src/ui/GpuView.hpp
     src/ui/MemoryView.hpp
     src/ui/NetworkView.hpp
     src/ui/DiskView.hpp

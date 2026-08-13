@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- GPU Board Frame -->
+  <rect x="8" y="14" width="48" height="34" rx="4" fill="#141824" stroke="#7c4dff" stroke-width="3"/>
+  
+  <!-- PCIe Connector Teeth -->
+  <rect x="14" y="48" width="16" height="5" fill="#ffb74d" rx="1"/>
+  <rect x="34" y="48" width="16" height="5" fill="#ffb74d" rx="1"/>
+  
+  <!-- Dual Cooling Fans -->
+  <circle cx="23" cy="31" r="9" fill="#1e2436" stroke="#7c4dff" stroke-width="2"/>
+  <circle cx="23" cy="31" r="3" fill="#7c4dff"/>
+  <path d="M 23 22 L 23 40 M 14 31 L 32 31" stroke="#7c4dff" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <circle cx="41" cy="31" r="9" fill="#1e2436" stroke="#7c4dff" stroke-width="2"/>
+  <circle cx="41" cy="31" r="3" fill="#7c4dff"/>
+  <path d="M 41 22 L 41 40 M 32 31 L 50 31" stroke="#7c4dff" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Power Connectors -->
+  <rect x="42" y="10" width="10" height="4" fill="#7c4dff" rx="1"/>
+</svg>

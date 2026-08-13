@@ -18,6 +18,7 @@ public:
 
     const CpuMetrics& cpuMetrics() const { return m_cpu; }
     const MemoryMetrics& memoryMetrics() const { return m_memory; }
+    const GpuMetrics& gpuMetrics() const { return m_gpu; }
     const NetworkMetrics& networkMetrics() const { return m_network; }
     const DiskMetrics& diskMetrics() const { return m_disk; }
     const std::vector<ProcessInfo>& processList() const { return m_processes; }
@@ -35,6 +36,7 @@ signals:
 private:
     void readCpu();
     void readMemory();
+    void readGpu();
     void readNetwork();
     void readDisk();
     void readProcesses();
@@ -53,6 +55,7 @@ private:
 
     CpuMetrics m_cpu;
     MemoryMetrics m_memory;
+    GpuMetrics m_gpu;
     NetworkMetrics m_network;
     DiskMetrics m_disk;
     std::vector<ProcessInfo> m_processes;

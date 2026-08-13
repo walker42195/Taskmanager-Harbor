@@ -9,5 +9,6 @@
     <file>assets/icons/disk.svg</file>
     <file>assets/icons/processes.svg</file>
     <file>assets/icons/system.svg</file>
+    <file>assets/icons/gpu.svg</file>
 </qresource>
 </RCC>

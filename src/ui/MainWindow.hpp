@@ -15,6 +15,7 @@
 #include "ui/DiskView.hpp"
 #include "ui/ProcessView.hpp"
 #include "ui/SystemInfoView.hpp"
+#include "ui/GpuView.hpp"
 
 namespace Harbor {
 
@@ -44,6 +45,7 @@ private:
     // Overview Tab components
     QWidget *m_overviewTab;
     GraphWidget *m_overviewCpuGraph;
+    GraphWidget *m_overviewGpuGraph;
     GraphWidget *m_overviewRamGraph;
     GraphWidget *m_overviewNetGraph;
     GraphWidget *m_overviewDiskGraph;
@@ -51,6 +53,7 @@ private:
     // Sub views
     ApplicationsView *m_applicationsView;
     CpuView *m_cpuView;
+    GpuView *m_gpuView;
     MemoryView *m_memoryView;
     NetworkView *m_networkView;
     DiskView *m_diskView;
@@ -59,6 +62,7 @@ private:
 
     // Top status badges
     QLabel *m_badgeCpu;
+    QLabel *m_badgeGpu;
     QLabel *m_badgeRam;
     QLabel *m_badgeNet;
     QLabel *m_statusFooter;

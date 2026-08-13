@@ -93,6 +93,28 @@ struct DiskMetrics {
     std::vector<DiskDeviceIo> devices;
 };
 
+struct SingleGpuMetrics {
+    int index{0};
+    std::string name;
+    std::string vendor;
+    double gpuUsagePercent{0.0};
+    double memUsagePercent{0.0};
+    uint64_t vramUsedBytes{0};
+    uint64_t vramTotalBytes{0};
+    double temperatureC{0.0};
+    double powerDrawW{0.0};
+    double clockMHz{0.0};
+    std::string driverVersion;
+};
+
+struct GpuMetrics {
+    double primaryUsagePercent{0.0};
+    uint64_t totalVramUsedBytes{0};
+    uint64_t totalVramTotalBytes{0};
+    double totalVramUsagePercent{0.0};
+    std::vector<SingleGpuMetrics> gpus;
+};
+
 struct ProcessInfo {
     int pid{0};
     int ppid{0};

@@ -44,6 +44,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_badgeCpu = new QLabel("CPU: 0%", headerWidget);
     m_badgeCpu->setStyleSheet("background-color: #1e2433; color: #00d2ff; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px;");
 
+    m_badgeGpu = new QLabel("GPU: 0%", headerWidget);
+    m_badgeGpu->setStyleSheet("background-color: #241a36; color: #b388ff; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px;");
+
     m_badgeRam = new QLabel("RAM: 0%", headerWidget);
     m_badgeRam->setStyleSheet("background-color: #1a2923; color: #00e676; padding: 4px 10px; border-radius: 12px; font-weight: bold; font-size: 12px;");
 
@@ -54,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent)
     headerLayout->addWidget(titleLabel);
     headerLayout->addStretch(1);
     headerLayout->addWidget(m_badgeCpu);
+    headerLayout->addWidget(m_badgeGpu);
     headerLayout->addWidget(m_badgeRam);
     headerLayout->addWidget(m_badgeNet);
 
@@ -78,6 +82,11 @@ MainWindow::MainWindow(QWidget *parent)
     m_overviewCpuGraph->setUnit("%");
     m_overviewCpuGraph->setColors(QColor(0, 210, 255), QColor(0, 210, 255, 40));
 
+    m_overviewGpuGraph = new GraphWidget(m_overviewTab);
+    m_overviewGpuGraph->setTitle("GPU Usage (%)");
+    m_overviewGpuGraph->setUnit("%");
+    m_overviewGpuGraph->setColors(QColor(179, 136, 255), QColor(179, 136, 255, 40));
+
     m_overviewRamGraph = new GraphWidget(m_overviewTab);
     m_overviewRamGraph->setTitle("RAM Usage");
     m_overviewRamGraph->setUnit("%");
@@ -98,13 +107,15 @@ MainWindow::MainWindow(QWidget *parent)
     m_overviewDiskGraph->setRange(0.0, 1024.0 * 1024.0, true);
 
     overviewLayout->addWidget(m_overviewCpuGraph, 0, 0);
-    overviewLayout->addWidget(m_overviewRamGraph, 0, 1);
-    overviewLayout->addWidget(m_overviewNetGraph, 1, 0);
-    overviewLayout->addWidget(m_overviewDiskGraph, 1, 1);
+    overviewLayout->addWidget(m_overviewGpuGraph, 0, 1);
+    overviewLayout->addWidget(m_overviewRamGraph, 0, 2);
+    overviewLayout->addWidget(m_overviewNetGraph, 1, 0, 1, 1);
+    overviewLayout->addWidget(m_overviewDiskGraph, 1, 1, 1, 2);
 
     // --- Sub Views ---
     m_applicationsView = new ApplicationsView(this);
     m_cpuView = new CpuView(this);
+    m_gpuView = new GpuView(this);
     m_memoryView = new MemoryView(this);
     m_networkView = new NetworkView(this);
     m_diskView = new DiskView(this);
@@ -131,6 +142,7 @@ MainWindow::MainWindow(QWidget *parent)
     addTabItem(m_overviewTab, QIcon(":/assets/icons/overview.svg"), "Overview");
     addTabItem(m_applicationsView, QIcon(":/assets/icons/applications.svg"), "Applications");
     addTabItem(m_cpuView, QIcon(":/assets/icons/cpu.svg"), "CPU & Cores");
+    addTabItem(m_gpuView, QIcon(":/assets/icons/gpu.svg"), "GPU & VRAM");
     addTabItem(m_memoryView, QIcon(":/assets/icons/memory.svg"), "Memory & Swap");
     addTabItem(m_networkView, QIcon(":/assets/icons/network.svg"), "Network");
     addTabItem(m_diskView, QIcon(":/assets/icons/disk.svg"), "Disks & Storage");
@@ -200,12 +212,14 @@ void MainWindow::updateTabButtonStyles(int selectedIndex) {
 
 void MainWindow::onMetricsUpdated() {
     const auto &cpu = m_collector.cpuMetrics();
+    const auto &gpu = m_collector.gpuMetrics();
     const auto &mem = m_collector.memoryMetrics();
     const auto &net = m_collector.networkMetrics();
     const auto &disk = m_collector.diskMetrics();
 
     // Always update Overview Tab Sparkline Data Buffers & Top Badges
     m_overviewCpuGraph->addDataPoint(cpu.totalUsagePercent);
+    m_overviewGpuGraph->addDataPoint(gpu.primaryUsagePercent);
     m_overviewRamGraph->addDataPoint(mem.ramUsagePercent);
     
     double totalGb = static_cast<double>(mem.totalRamBytes) / (1024.0 * 1024.0 * 1024.0);
@@ -221,6 +235,7 @@ void MainWindow::onMetricsUpdated() {
 
     // Top Badges
     m_badgeCpu->setText(QString("CPU: %1%").arg(QString::number(cpu.totalUsagePercent, 'f', 1)));
+    m_badgeGpu->setText(QString("GPU: %1%").arg(QString::number(gpu.primaryUsagePercent, 'f', 1)));
     m_badgeRam->setText(QString("RAM: %1 GB / %2 GB (%3%)").arg(QString::number(usedGb, 'f', 1)).arg(QString::number(totalGb, 'f', 1)).arg(QString::number(mem.ramUsagePercent, 'f', 1)));
     m_badgeNet->setText(QString("NET: ⬇ %1 / ⬆ %2").arg(formatRateShort(net.totalRxRateBps)).arg(formatRateShort(net.totalTxRateBps)));
 
@@ -235,19 +250,22 @@ void MainWindow::onMetricsUpdated() {
         case 2: // CPU
             m_cpuView->updateCpu(cpu);
             break;
-        case 3: // Memory
+        case 3: // GPU
+            m_gpuView->updateGpu(gpu);
+            break;
+        case 4: // Memory
             m_memoryView->updateMemory(mem);
             break;
-        case 4: // Network
+        case 5: // Network
             m_networkView->updateNetwork(net);
             break;
-        case 5: // Disks
+        case 6: // Disks
             m_diskView->updateDisk(disk);
             break;
-        case 6: // Processes
+        case 7: // Processes
             m_processView->updateProcesses(m_collector.processList());
             break;
-        case 7: // System Info
+        case 8: // System Info
             m_systemInfoView->updateSystemInfo(m_collector.systemInfo());
             break;
     }

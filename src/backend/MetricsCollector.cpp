@@ -36,6 +36,7 @@ void MetricsCollector::updateAll() {
 
     readCpu();
     readMemory();
+    readGpu();
     readNetwork();
     readDisk();
     readProcesses();
@@ -145,6 +146,123 @@ void MetricsCollector::readMemory() {
     if (swapTotal > 0) {
         m_memory.swapUsagePercent = (100.0 * m_memory.usedSwapBytes) / swapTotal;
     }
+}
+
+void MetricsCollector::readGpu() {
+    GpuMetrics newGpuMetrics;
+
+    // 1. Try NVIDIA GPUs via nvidia-smi if available
+    static bool nvidiaChecked = false;
+    static bool hasNvidiaSmi = false;
+    if (!nvidiaChecked) {
+        hasNvidiaSmi = (access("/usr/bin/nvidia-smi", X_OK) == 0 || access("/bin/nvidia-smi", X_OK) == 0);
+        nvidiaChecked = true;
+    }
+
+    if (hasNvidiaSmi) {
+        FILE* fp = popen("nvidia-smi --query-gpu=index,name,driver_version,utilization.gpu,utilization.memory,memory.used,memory.total,temperature.gpu,power.draw,clocks.current.graphics --format=csv,noheader,nounits 2>/dev/null", "r");
+        if (fp) {
+            char buffer[512];
+            while (fgets(buffer, sizeof(buffer), fp)) {
+                std::string line(buffer);
+                std::stringstream ss(line);
+                std::string token;
+                std::vector<std::string> tokens;
+                while (std::getline(ss, token, ',')) {
+                    size_t first = token.find_first_not_of(" \t\r\n");
+                    size_t last = token.find_last_not_of(" \t\r\n");
+                    if (first != std::string::npos && last != std::string::npos) {
+                        tokens.push_back(token.substr(first, last - first + 1));
+                    } else {
+                        tokens.push_back("");
+                    }
+                }
+
+                if (tokens.size() >= 10) {
+                    SingleGpuMetrics gpu;
+                    gpu.vendor = "NVIDIA";
+                    try { gpu.index = std::stoi(tokens[0]); } catch (...) {}
+                    gpu.name = tokens[1];
+                    gpu.driverVersion = tokens[2];
+                    try { gpu.gpuUsagePercent = std::stod(tokens[3]); } catch (...) {}
+                    try { gpu.memUsagePercent = std::stod(tokens[4]); } catch (...) {}
+                    try { gpu.vramUsedBytes = static_cast<uint64_t>(std::stod(tokens[5]) * 1024.0 * 1024.0); } catch (...) {}
+                    try { gpu.vramTotalBytes = static_cast<uint64_t>(std::stod(tokens[6]) * 1024.0 * 1024.0); } catch (...) {}
+                    try { gpu.temperatureC = std::stod(tokens[7]); } catch (...) {}
+                    try { gpu.powerDrawW = std::stod(tokens[8]); } catch (...) {}
+                    try { gpu.clockMHz = std::stod(tokens[9]); } catch (...) {}
+
+                    newGpuMetrics.gpus.push_back(gpu);
+                }
+            }
+            pclose(fp);
+        }
+    }
+
+    // 2. Scan sysfs DRM (/sys/class/drm/card*) for AMD / Intel GPUs
+    for (int cardIdx = 0; cardIdx < 8; ++cardIdx) {
+        std::string cardPath = "/sys/class/drm/card" + std::to_string(cardIdx) + "/device";
+        if (!fs::exists(cardPath)) continue;
+
+        std::string vendorPath = cardPath + "/vendor";
+        std::ifstream vendorFile(vendorPath);
+        std::string vendorId;
+        if (vendorFile >> vendorId && vendorId == "0x10de") {
+            if (hasNvidiaSmi && !newGpuMetrics.gpus.empty()) continue;
+        }
+
+        std::string busyPath = cardPath + "/gpu_busy_percent";
+        if (fs::exists(busyPath)) {
+            SingleGpuMetrics gpu;
+            gpu.vendor = "AMD";
+            gpu.name = "AMD Radeon Graphics";
+            
+            std::ifstream busyFile(busyPath);
+            busyFile >> gpu.gpuUsagePercent;
+
+            std::ifstream vramTotalFile(cardPath + "/mem_info_vram_total");
+            std::ifstream vramUsedFile(cardPath + "/mem_info_vram_used");
+            vramTotalFile >> gpu.vramTotalBytes;
+            vramUsedFile >> gpu.vramUsedBytes;
+            if (gpu.vramTotalBytes > 0) {
+                gpu.memUsagePercent = (100.0 * gpu.vramUsedBytes) / gpu.vramTotalBytes;
+            }
+
+            std::string hwmonDir = cardPath + "/hwmon";
+            if (fs::exists(hwmonDir)) {
+                try {
+                    for (const auto& entry : fs::directory_iterator(hwmonDir)) {
+                        std::ifstream tempFile(entry.path() / "temp1_input");
+                        double tempMilliC = 0;
+                        if (tempFile >> tempMilliC) {
+                            gpu.temperatureC = tempMilliC / 1000.0;
+                        }
+                        std::ifstream powerFile(entry.path() / "power1_average");
+                        if (!powerFile.is_open()) powerFile.open(entry.path() / "power1_input");
+                        double powerMicroW = 0;
+                        if (powerFile >> powerMicroW) {
+                            gpu.powerDrawW = powerMicroW / 1000000.0;
+                        }
+                    }
+                } catch (...) {}
+            }
+
+            newGpuMetrics.gpus.push_back(gpu);
+        }
+    }
+
+    for (const auto& gpu : newGpuMetrics.gpus) {
+        newGpuMetrics.totalVramUsedBytes += gpu.vramUsedBytes;
+        newGpuMetrics.totalVramTotalBytes += gpu.vramTotalBytes;
+        if (gpu.gpuUsagePercent > newGpuMetrics.primaryUsagePercent) {
+            newGpuMetrics.primaryUsagePercent = gpu.gpuUsagePercent;
+        }
+    }
+    if (newGpuMetrics.totalVramTotalBytes > 0) {
+        newGpuMetrics.totalVramUsagePercent = (100.0 * newGpuMetrics.totalVramUsedBytes) / newGpuMetrics.totalVramTotalBytes;
+    }
+
+    m_gpu = std::move(newGpuMetrics);
 }
 
 void MetricsCollector::readNetwork() {
