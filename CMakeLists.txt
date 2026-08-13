@@ -62,6 +62,8 @@ set(RESOURCES
 
 add_executable(Taskmanager-Harbor ${SOURCES} ${HEADERS} ${RESOURCES})
 
+target_precompile_headers(Taskmanager-Harbor PRIVATE src/backend/SystemMetrics.hpp)
+
 if(WIN32)
     target_link_libraries(Taskmanager-Harbor PRIVATE Qt6::Widgets Qt6::Svg psapi iphlpapi)
 else()

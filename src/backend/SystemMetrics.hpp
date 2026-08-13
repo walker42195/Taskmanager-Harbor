@@ -8,6 +8,15 @@
 #include <vector>
 #include <cstdint>
 
+#if defined(_MSC_VER)
+namespace stdext {
+    template<typename T>
+    inline T* make_checked_array_iterator(T* ptr, size_t) { return ptr; }
+    template<typename T>
+    inline const T* make_checked_array_iterator(const T* ptr, size_t) { return ptr; }
+}
+#endif
+
 namespace Harbor {
 
 struct CoreTime {
