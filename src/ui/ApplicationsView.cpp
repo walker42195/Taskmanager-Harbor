@@ -127,6 +127,14 @@ ApplicationsView::ApplicationsView(QWidget *parent)
     connect(m_closeBtn, &QPushButton::clicked, this, &ApplicationsView::onCloseSelectedApp);
     connect(m_forceQuitBtn, &QPushButton::clicked, this, &ApplicationsView::onForceQuitSelectedApp);
     connect(m_tableWidget, &QTableWidget::customContextMenuRequested, this, &ApplicationsView::showContextMenu);
+
+    // Clicking a header to change the sort column/order is a deliberate
+    // browsing action, not a request to keep tracking whichever app was
+    // selected before — release the selection so it stops following the row.
+    connect(m_tableWidget->horizontalHeader(), &QHeaderView::sectionClicked, this, [this](int) {
+        m_tableWidget->clearSelection();
+        m_tableWidget->setCurrentCell(-1, -1);
+    });
 }
 
 void ApplicationsView::updateApplications(const std::vector<ApplicationGroup> &apps) {

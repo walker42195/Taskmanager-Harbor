@@ -126,6 +126,14 @@ ProcessView::ProcessView(QWidget *parent)
     connect(m_terminateBtn, &QPushButton::clicked, this, &ProcessView::onTerminateSelected);
     connect(m_killBtn, &QPushButton::clicked, this, &ProcessView::onKillSelected);
     connect(m_tableWidget, &QTableWidget::customContextMenuRequested, this, &ProcessView::showContextMenu);
+
+    // Clicking a header to change the sort column/order is a deliberate
+    // browsing action, not a request to keep tracking whichever process was
+    // selected before — release the selection so it stops following the row.
+    connect(m_tableWidget->horizontalHeader(), &QHeaderView::sectionClicked, this, [this](int) {
+        m_tableWidget->clearSelection();
+        m_tableWidget->setCurrentCell(-1, -1);
+    });
 }
 
 void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
