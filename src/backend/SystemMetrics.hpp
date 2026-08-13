@@ -1,6 +1,9 @@
 #ifndef SYSTEM_METRICS_HPP
 #define SYSTEM_METRICS_HPP
 
+#include <iterator>
+#include <algorithm>
+#include <utility>
 #include <string>
 #include <vector>
 #include <cstdint>

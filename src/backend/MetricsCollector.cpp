@@ -4,11 +4,16 @@
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include <iterator>
+#include <utility>
 
 #ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#include <netioapi.h>
 #include <windows.h>
 #include <psapi.h>
-#include <iphlpapi.h>
 #include <tlhelp32.h>
 #define popen _popen
 #define pclose _pclose
