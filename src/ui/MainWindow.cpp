@@ -97,6 +97,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_overviewNetGraph->setUnit("B/s");
     m_overviewNetGraph->setColors(QColor(0, 210, 255), QColor(0, 210, 255, 30));
     m_overviewNetGraph->setSecondaryColors(QColor(255, 0, 128), QColor(255, 0, 128, 25));
+    m_overviewNetGraph->setDualLabels("In", "Out");
     m_overviewNetGraph->setRange(0.0, 1024.0 * 1024.0, true);
 
     m_overviewDiskGraph = new GraphWidget(m_overviewTab);
@@ -104,6 +105,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_overviewDiskGraph->setUnit("B/s");
     m_overviewDiskGraph->setColors(QColor(255, 183, 77), QColor(255, 183, 77, 35));
     m_overviewDiskGraph->setSecondaryColors(QColor(255, 112, 67), QColor(255, 112, 67, 25));
+    m_overviewDiskGraph->setDualLabels("Read", "Write");
     m_overviewDiskGraph->setRange(0.0, 1024.0 * 1024.0, true);
 
     overviewLayout->addWidget(m_overviewCpuGraph, 0, 0);

@@ -28,6 +28,12 @@ void GraphWidget::setSecondaryColors(const QColor &lineColor, const QColor &fill
     update();
 }
 
+void GraphWidget::setDualLabels(const QString &label1, const QString &label2) {
+    m_label1 = label1;
+    m_label2 = label2;
+    update();
+}
+
 void GraphWidget::setTitle(const QString &title) {
     m_title = title;
     update();
@@ -143,13 +149,17 @@ void GraphWidget::paintEvent(QPaintEvent *event) {
         if (m_hasDualLine && !m_dataHistory2.empty()) {
             double curVal2 = m_dataHistory2.back();
             QString valStr2;
-            if (m_unit == "B/s") {
+            if (m_unit == "%") {
+                valStr2 = QString::number(curVal2, 'f', 1) + "%";
+            } else if (m_unit == "B/s") {
                 if (curVal2 >= 1024 * 1024 * 1024) valStr2 = QString::number(curVal2 / (1024 * 1024 * 1024), 'f', 1) + " GB/s";
                 else if (curVal2 >= 1024 * 1024) valStr2 = QString::number(curVal2 / (1024 * 1024), 'f', 1) + " MB/s";
                 else if (curVal2 >= 1024) valStr2 = QString::number(curVal2 / 1024, 'f', 1) + " KB/s";
                 else valStr2 = QString::number(curVal2, 'f', 0) + " B/s";
+            } else {
+                valStr2 = QString::number(curVal2, 'f', 1) + " " + m_unit;
             }
-            valStr = QString("IN: %1  |  OUT: %2").arg(valStr, valStr2);
+            valStr = QString("%1: %2  |  %3: %4").arg(m_label1, valStr, m_label2, valStr2);
         }
 
         painter.setFont(QFont("Cantarell", 9, QFont::Medium));

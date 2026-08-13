@@ -17,6 +17,7 @@ public:
 
     void setColors(const QColor &lineColor, const QColor &fillColor);
     void setSecondaryColors(const QColor &lineColor, const QColor &fillColor); // For dual lines (e.g. RX/TX)
+    void setDualLabels(const QString &label1, const QString &label2); // Custom labels instead of IN/OUT
     void setTitle(const QString &title);
     void setUnit(const QString &unit);
     void setCustomValueText(const QString &text);
@@ -35,6 +36,8 @@ private:
     QString m_title;
     QString m_unit;
     QString m_customValueText;
+    QString m_label1{"IN"};
+    QString m_label2{"OUT"};
     QColor m_lineColor{0, 210, 255};   // Electric Cyan default
     QColor m_fillColor{0, 210, 255, 40};
 

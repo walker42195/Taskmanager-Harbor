@@ -47,6 +47,7 @@ GpuView::GpuView(QWidget *parent)
     m_gpuGraph->setUnit("%");
     m_gpuGraph->setColors(QColor(124, 77, 255), QColor(124, 77, 255, 45)); // Purple Accent for GPU
     m_gpuGraph->setSecondaryColors(QColor(0, 230, 118), QColor(0, 230, 118, 30)); // Green for VRAM
+    m_gpuGraph->setDualLabels("Core", "VRAM");
     m_gpuGraph->setRange(0.0, 100.0, false);
     mainLayout->addWidget(m_gpuGraph, 1);
 
@@ -72,6 +73,15 @@ void GpuView::updateGpu(const GpuMetrics &gpuMetrics) {
         m_primaryModelLabel->setText("GPU: Integrated / No GPU metrics detected");
         m_driverLabel->setText("Driver: N/A");
         m_vramTotalLabel->setText("Total VRAM: N/A");
+
+        if (!m_gpuWidgets.empty()) {
+            QLayoutItem *child;
+            while ((child = m_gpuCardsLayout->takeAt(0)) != nullptr) {
+                if (child->widget()) delete child->widget();
+                delete child;
+            }
+            m_gpuWidgets.clear();
+        }
         return;
     }
 
@@ -118,7 +128,7 @@ void GpuView::updateGpu(const GpuMetrics &gpuMetrics) {
             auto *row2 = new QHBoxLayout();
             auto *usageTitle = new QLabel("Core Usage:", card);
             usageTitle->setStyleSheet("color: #8b949e; font-size: 12px; border: none;");
-            usageTitle->setFixedWidth(90);
+            usageTitle->setFixedWidth(120);
 
             auto *usageBar = new QProgressBar(card);
             usageBar->setRange(0, 100);
@@ -143,7 +153,7 @@ void GpuView::updateGpu(const GpuMetrics &gpuMetrics) {
             auto *row3 = new QHBoxLayout();
             auto *vramTitle = new QLabel("VRAM Usage:", card);
             vramTitle->setStyleSheet("color: #8b949e; font-size: 12px; border: none;");
-            vramTitle->setFixedWidth(90);
+            vramTitle->setFixedWidth(120);
 
             auto *vramBar = new QProgressBar(card);
             vramBar->setRange(0, 100);
@@ -155,7 +165,7 @@ void GpuView::updateGpu(const GpuMetrics &gpuMetrics) {
             );
 
             auto *vramTextLbl = new QLabel("0 GB / 0 GB", card);
-            vramTextLbl->setFixedWidth(130);
+            vramTextLbl->setMinimumWidth(160);
             vramTextLbl->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
             vramTextLbl->setStyleSheet("color: #00e676; font-size: 12px; font-weight: bold; border: none;");
 
