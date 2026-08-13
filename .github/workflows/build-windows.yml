@@ -7,6 +7,9 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
@@ -53,3 +56,12 @@ jobs:
       with:
         name: Taskmanager-Harbor-Windows-x64
         path: Taskmanager-Harbor-Windows-x64.zip
+
+    - name: Create or Update Public GitHub Release
+      uses: softprops/action-gh-release@v2
+      if: github.ref == 'refs/heads/main'
+      with:
+        tag_name: "latest"
+        name: "Taskmanager-Harbor Latest Release"
+        body: "Public pre-compiled Release binary for Windows (x64). Download directly without logging in."
+        files: Taskmanager-Harbor-Windows-x64.zip
