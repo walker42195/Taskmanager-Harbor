@@ -3,11 +3,22 @@
 #include <sstream>
 #include <iostream>
 #include <filesystem>
+#include <algorithm>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <psapi.h>
+#include <iphlpapi.h>
+#include <tlhelp32.h>
+#define popen _popen
+#define pclose _pclose
+#else
 #include <unistd.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <pwd.h>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -52,6 +63,30 @@ void MetricsCollector::updateAll() {
 }
 
 void MetricsCollector::readCpu() {
+#ifdef _WIN32
+    FILETIME idleTime, kernelTime, userTime;
+    if (GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
+        auto ftToUint64 = [](const FILETIME &ft) -> uint64_t {
+            return (static_cast<uint64_t>(ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+        };
+        uint64_t idle = ftToUint64(idleTime);
+        uint64_t kernel = ftToUint64(kernelTime);
+        uint64_t user = ftToUint64(userTime);
+        uint64_t total = kernel + user;
+        uint64_t active = total > idle ? (total - idle) : 0;
+
+        static uint64_t lastTotal = 0;
+        static uint64_t lastActive = 0;
+
+        if (lastTotal > 0 && total > lastTotal) {
+            uint64_t totalDiff = total - lastTotal;
+            uint64_t activeDiff = active - lastActive;
+            m_cpu.totalUsagePercent = (100.0 * activeDiff) / totalDiff;
+        }
+        lastTotal = total;
+        lastActive = active;
+    }
+#else
     std::ifstream file("/proc/stat");
     if (!file.is_open()) return;
 
@@ -104,9 +139,28 @@ void MetricsCollector::readCpu() {
             m_cpu.currentFreqMHz = khz / 1000.0;
         }
     }
+#endif
 }
 
 void MetricsCollector::readMemory() {
+#ifdef _WIN32
+    MEMORYSTATUSEX statex;
+    statex.dwLength = sizeof(statex);
+    if (GlobalMemoryStatusEx(&statex)) {
+        m_memory.totalRamBytes = statex.ullTotalPhys;
+        m_memory.freeRamBytes = statex.ullAvailPhys;
+        m_memory.availableRamBytes = statex.ullAvailPhys;
+        m_memory.usedRamBytes = statex.ullTotalPhys - statex.ullAvailPhys;
+        m_memory.ramUsagePercent = static_cast<double>(statex.dwMemoryLoad);
+
+        m_memory.totalSwapBytes = statex.ullTotalPageFile;
+        m_memory.freeSwapBytes = statex.ullAvailPageFile;
+        m_memory.usedSwapBytes = statex.ullTotalPageFile - statex.ullAvailPageFile;
+        if (statex.ullTotalPageFile > 0) {
+            m_memory.swapUsagePercent = (100.0 * m_memory.usedSwapBytes) / statex.ullTotalPageFile;
+        }
+    }
+#else
     std::ifstream file("/proc/meminfo");
     if (!file.is_open()) return;
 
@@ -146,6 +200,7 @@ void MetricsCollector::readMemory() {
     if (swapTotal > 0) {
         m_memory.swapUsagePercent = (100.0 * m_memory.usedSwapBytes) / swapTotal;
     }
+#endif
 }
 
 void MetricsCollector::readGpu() {
@@ -266,6 +321,54 @@ void MetricsCollector::readGpu() {
 }
 
 void MetricsCollector::readNetwork() {
+#ifdef _WIN32
+    PMIB_IF_TABLE2 pIfTable = nullptr;
+    if (GetIfTable2(&pIfTable) == NO_ERROR && pIfTable != nullptr) {
+        std::vector<NetworkInterfaceInfo> newInterfaces;
+        uint64_t totalRx = 0, totalTx = 0;
+
+        for (ULONG i = 0; i < pIfTable->NumEntries; ++i) {
+            const MIB_IF_ROW2 &row = pIfTable->Table[i];
+            if (row.Type == IF_TYPE_SOFTWARE_LOOPBACK) continue;
+
+            uint64_t rxBytes = row.InOctets;
+            uint64_t txBytes = row.OutOctets;
+            totalRx += rxBytes;
+            totalTx += txBytes;
+
+            NetworkInterfaceInfo info;
+            info.name = "Network Adapter";
+            info.rxBytes = rxBytes;
+            info.txBytes = txBytes;
+
+            for (const auto& oldIface : m_network.interfaces) {
+                if (oldIface.name == info.name) {
+                    if (rxBytes >= oldIface.rxBytes) {
+                        info.rxRateBps = (rxBytes - oldIface.rxBytes) / m_lastSampleIntervalSec;
+                    }
+                    if (txBytes >= oldIface.txBytes) {
+                        info.txRateBps = (txBytes - oldIface.txBytes) / m_lastSampleIntervalSec;
+                    }
+                    break;
+                }
+            }
+            newInterfaces.push_back(info);
+        }
+        FreeMibTable(pIfTable);
+
+        if (!m_firstRun && m_network.cumulativeRxBytes > 0) {
+            if (totalRx >= m_network.cumulativeRxBytes) {
+                m_network.totalRxRateBps = (totalRx - m_network.cumulativeRxBytes) / m_lastSampleIntervalSec;
+            }
+            if (totalTx >= m_network.cumulativeTxBytes) {
+                m_network.totalTxRateBps = (totalTx - m_network.cumulativeTxBytes) / m_lastSampleIntervalSec;
+            }
+        }
+        m_network.cumulativeRxBytes = totalRx;
+        m_network.cumulativeTxBytes = totalTx;
+        m_network.interfaces = newInterfaces;
+    }
+#else
     std::ifstream file("/proc/net/dev");
     if (!file.is_open()) return;
 
@@ -325,9 +428,37 @@ void MetricsCollector::readNetwork() {
     m_network.cumulativeRxBytes = totalRx;
     m_network.cumulativeTxBytes = totalTx;
     m_network.interfaces = newInterfaces;
+#endif
 }
 
 void MetricsCollector::readDisk() {
+#ifdef _WIN32
+    char driveBuffer[512];
+    DWORD len = GetLogicalDriveStringsA(sizeof(driveBuffer), driveBuffer);
+    if (len > 0 && len < sizeof(driveBuffer)) {
+        std::vector<DiskPartitionInfo> newPartitions;
+        char *drive = driveBuffer;
+        while (*drive) {
+            ULARGE_INTEGER freeBytesAvail, totalBytes, freeBytesTotal;
+            if (GetDiskFreeSpaceExA(drive, &freeBytesAvail, &totalBytes, &freeBytesTotal)) {
+                DiskPartitionInfo part;
+                part.device = drive;
+                part.mountPoint = drive;
+                part.fsType = "NTFS / FAT32";
+                part.totalBytes = totalBytes.QuadPart;
+                part.freeBytes = freeBytesTotal.QuadPart;
+                part.availableBytes = freeBytesAvail.QuadPart;
+                part.usedBytes = (totalBytes.QuadPart > freeBytesTotal.QuadPart) ? (totalBytes.QuadPart - freeBytesTotal.QuadPart) : 0;
+                if (part.totalBytes > 0) {
+                    part.usagePercent = (100.0 * part.usedBytes) / part.totalBytes;
+                }
+                newPartitions.push_back(part);
+            }
+            drive += strlen(drive) + 1;
+        }
+        m_disk.partitions = newPartitions;
+    }
+#else
     // 1. Read Disk I/O Rates from /proc/diskstats (Total & Per-Device)
     std::ifstream file("/proc/diskstats");
     if (file.is_open()) {
@@ -442,9 +573,41 @@ void MetricsCollector::readDisk() {
         }
         m_disk.partitions = newPartitions;
     }
+#endif
 }
 
 void MetricsCollector::readProcesses() {
+#ifdef _WIN32
+    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnap != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32W pe;
+        pe.dwSize = sizeof(pe);
+        if (Process32FirstW(hSnap, &pe)) {
+            std::vector<ProcessInfo> newProcList;
+            do {
+                ProcessInfo pinfo;
+                pinfo.pid = static_cast<int>(pe.th32ProcessID);
+                pinfo.ppid = static_cast<int>(pe.th32ParentProcessID);
+                pinfo.name = QString::fromWCharArray(pe.szExeFile).toStdString();
+                pinfo.user = "System / User";
+                pinfo.state = 'R';
+
+                HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pe.th32ProcessID);
+                if (hProc != NULL) {
+                    PROCESS_MEMORY_COUNTERS pmc;
+                    if (GetProcessMemoryInfo(hProc, &pmc, sizeof(pmc))) {
+                        pinfo.rssBytes = pmc.WorkingSetSize;
+                    }
+                    CloseHandle(hProc);
+                }
+
+                newProcList.push_back(pinfo);
+            } while (Process32NextW(hSnap, &pe));
+            m_processes = std::move(newProcList);
+        }
+        CloseHandle(hSnap);
+    }
+#else
     std::vector<ProcessInfo> newProcList;
     std::unordered_map<int, std::pair<uint64_t, uint64_t>> newProcCpuTimes;
 
@@ -528,6 +691,7 @@ void MetricsCollector::readProcesses() {
 
     m_processes = std::move(newProcList);
     m_lastProcCpuTimes = std::move(newProcCpuTimes);
+#endif
 }
 
 void MetricsCollector::scanDesktopEntries() {
@@ -635,9 +799,23 @@ void MetricsCollector::readApplicationGroups() {
 }
 
 void MetricsCollector::readStaticSystemInfo() {
+#ifdef _WIN32
+    m_sysInfo.osName = "Windows";
+    char hostBuf[256];
+    DWORD hostLen = sizeof(hostBuf);
+    if (GetComputerNameA(hostBuf, &hostLen)) {
+        m_sysInfo.hostname = hostBuf;
+    }
+    SYSTEM_INFO sysInfoWin;
+    GetSystemInfo(&sysInfoWin);
+    m_sysInfo.cpuThreadCount = static_cast<int>(sysInfoWin.dwNumberOfProcessors);
+    m_sysInfo.architecture = (sysInfoWin.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64) ? "x86_64" : "x86";
+    m_sysInfo.cpuModel = "Processor (Windows)";
+    m_sysInfo.kernelVersion = "Windows NT Kernel";
+#else
     struct utsname uts;
     if (uname(&uts) == 0) {
-        m_sysInfo.osName = "Arch Linux";
+        m_sysInfo.osName = "Linux";
         m_sysInfo.kernelVersion = std::string(uts.sysname) + " " + std::string(uts.release);
         m_sysInfo.architecture = uts.machine;
         m_sysInfo.hostname = uts.nodename;
@@ -659,6 +837,7 @@ void MetricsCollector::readStaticSystemInfo() {
         }
         m_sysInfo.cpuThreadCount = threads;
     }
+#endif
 }
 
 } // namespace Harbor

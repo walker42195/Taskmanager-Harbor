@@ -54,7 +54,11 @@ ProcessView::ProcessView(QWidget *parent)
         "QPushButton:hover { background-color: #3b455e; color: #ffa726; }"
     );
 
-    m_killBtn = new QPushButton("Force Kill (SIGKILL)", this);
+#ifdef _WIN32
+    m_killBtn = new QPushButton("End Task", this);
+#else
+    m_killBtn = new QPushButton("End Task / Force Kill", this);
+#endif
     m_killBtn->setStyleSheet(
         "QPushButton { background-color: #3e1b24; color: #ff5252; border: 1px solid #5c2330; "
         "border-radius: 6px; padding: 6px 14px; font-weight: bold; }"
@@ -219,16 +223,16 @@ void ProcessView::onKillSelected() {
     if (pid <= 0) return;
     QString name = getSelectedProcessName();
 
-    auto reply = QMessageBox::question(this, "Confirm Force Kill",
-        QString("Are you sure you want to force kill (%1) PID %2 immediately with SIGKILL?").arg(name).arg(pid),
+    auto reply = QMessageBox::question(this, "Confirm End Process",
+        QString("Are you sure you want to end process (%1) PID %2?").arg(name).arg(pid),
         QMessageBox::Yes | QMessageBox::No);
 
     if (reply == QMessageBox::Yes) {
         if (ProcessManager::killProcess(pid)) {
-            m_statusLabel->setText(QString("Force killed %1 (PID %2)").arg(name).arg(pid));
+            m_statusLabel->setText(QString("Ended process %1 (PID %2)").arg(name).arg(pid));
             emit processActionTriggered();
         } else {
-            QMessageBox::warning(this, "Error", QString("Could not kill process %1 (PID %2).").arg(name).arg(pid));
+            QMessageBox::warning(this, "Error", QString("Could not end process %1 (PID %2).").arg(name).arg(pid));
         }
     }
 }
@@ -285,7 +289,7 @@ void ProcessView::showContextMenu(const QPoint &pos) {
     );
 
     menu.addAction("⚡ End Task (SIGTERM)", this, &ProcessView::onTerminateSelected);
-    menu.addAction("💀 Force Kill (SIGKILL)", this, &ProcessView::onKillSelected);
+    menu.addAction("💀 End Process", this, &ProcessView::onKillSelected);
     menu.addSeparator();
     menu.addAction("⏸ Pause Process (SIGSTOP)", this, &ProcessView::onPauseSelected);
     menu.addAction("▶ Resume Process (SIGCONT)", this, &ProcessView::onResumeSelected);

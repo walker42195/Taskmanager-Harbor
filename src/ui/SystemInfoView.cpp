@@ -46,7 +46,7 @@ SystemInfoView::SystemInfoView(QWidget *parent)
     heroHeaderLayout->addWidget(titleLbl);
     heroHeaderLayout->addStretch(1);
 
-    auto *subTitleLbl = new QLabel("High-Performance System Monitor for Linux", heroCard);
+    auto *subTitleLbl = new QLabel("High-Performance System Monitor", heroCard);
     subTitleLbl->setStyleSheet("color: #8b949e; font-size: 13px; border: none;");
 
     heroLayout->addLayout(heroHeaderLayout);

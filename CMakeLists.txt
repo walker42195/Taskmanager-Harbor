@@ -50,6 +50,10 @@ set(RESOURCES
 
 add_executable(Taskmanager-Harbor ${SOURCES} ${HEADERS} ${RESOURCES})
 
-target_link_libraries(Taskmanager-Harbor PRIVATE Qt6::Widgets Qt6::Svg)
+if(WIN32)
+    target_link_libraries(Taskmanager-Harbor PRIVATE Qt6::Widgets Qt6::Svg psapi iphlpapi)
+else()
+    target_link_libraries(Taskmanager-Harbor PRIVATE Qt6::Widgets Qt6::Svg)
+endif()
 
 target_include_directories(Taskmanager-Harbor PRIVATE src)
