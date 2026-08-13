@@ -10,6 +10,10 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
 
+if(MSVC)
+    add_compile_options(/permissive)
+endif()
+
 set(SOURCES
     src/main.cpp
     src/backend/MetricsCollector.cpp

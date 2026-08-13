@@ -215,7 +215,11 @@ void MetricsCollector::readGpu() {
     static bool nvidiaChecked = false;
     static bool hasNvidiaSmi = false;
     if (!nvidiaChecked) {
+#ifdef _WIN32
+        hasNvidiaSmi = (std::system("where nvidia-smi >nul 2>&1") == 0);
+#else
         hasNvidiaSmi = (access("/usr/bin/nvidia-smi", X_OK) == 0 || access("/bin/nvidia-smi", X_OK) == 0);
+#endif
         nvidiaChecked = true;
     }
 
