@@ -10,18 +10,41 @@
 
 namespace Harbor {
 
+// Ties (e.g. several apps at 0 CPU%) are broken by app name so sort order
+// stays deterministic across refreshes instead of jumping around when rows
+// get rebuilt in a different scan order each tick.
 class AppNumericItem : public QTableWidgetItem {
 public:
-    AppNumericItem(double numVal, const QString &displayStr)
-        : QTableWidgetItem(displayStr), m_numVal(numVal) {}
+    AppNumericItem(double numVal, const QString &appName, const QString &displayStr)
+        : QTableWidgetItem(displayStr), m_numVal(numVal), m_appName(appName) {}
 
     bool operator<(const QTableWidgetItem &other) const override {
         const auto *o = dynamic_cast<const AppNumericItem*>(&other);
-        if (o) return m_numVal < o->m_numVal;
+        if (o) {
+            if (m_numVal != o->m_numVal) return m_numVal < o->m_numVal;
+            return m_appName.localeAwareCompare(o->m_appName) < 0;
+        }
         return QTableWidgetItem::operator<(other);
     }
 private:
     double m_numVal{0.0};
+    QString m_appName;
+};
+
+class AppTextItem : public QTableWidgetItem {
+public:
+    AppTextItem(const QString &displayStr, const QString &appName)
+        : QTableWidgetItem(displayStr), m_appName(appName) {}
+
+    bool operator<(const QTableWidgetItem &other) const override {
+        int cmp = text().localeAwareCompare(other.text());
+        if (cmp != 0) return cmp < 0;
+        const auto *o = dynamic_cast<const AppTextItem*>(&other);
+        if (o) return m_appName.localeAwareCompare(o->m_appName) < 0;
+        return QTableWidgetItem::operator<(other);
+    }
+private:
+    QString m_appName;
 };
 
 static QString formatAppRam(uint64_t bytes) {
@@ -116,7 +139,6 @@ void ApplicationsView::updateApplications(const std::vector<ApplicationGroup> &a
     m_tableWidget->setRowCount(0);
 
     int displayCount = 0;
-    int targetRowToSelect = -1;
 
     for (const auto &app : apps) {
         if (!m_filterText.isEmpty()) {
@@ -130,9 +152,6 @@ void ApplicationsView::updateApplications(const std::vector<ApplicationGroup> &a
         m_tableWidget->insertRow(row);
 
         QString nameStr = QString::fromStdString(app.displayName);
-        if (nameStr == selectedAppName) {
-            targetRowToSelect = row;
-        }
 
         // App Name Item with Cached Theme Icon
         QString iconKey = QString::fromStdString(app.iconName);
@@ -149,31 +168,40 @@ void ApplicationsView::updateApplications(const std::vector<ApplicationGroup> &a
         // Process Instances Count
         int procCount = static_cast<int>(app.pids.size());
         QString procStr = (procCount == 1) ? "1 process" : QString("%1 processes").arg(procCount);
-        m_tableWidget->setItem(row, 1, new AppNumericItem(procCount, procStr));
+        m_tableWidget->setItem(row, 1, new AppNumericItem(procCount, nameStr, procStr));
 
         // CPU %
         QString cpuStr = (app.totalCpuPercent > 0.05) ? QString::number(app.totalCpuPercent, 'f', 1) + "%" : "--";
-        auto *cpuItem = new AppNumericItem(app.totalCpuPercent, cpuStr);
+        auto *cpuItem = new AppNumericItem(app.totalCpuPercent, nameStr, cpuStr);
         if (app.totalCpuPercent > 40.0) cpuItem->setForeground(QColor(255, 82, 82));
         else if (app.totalCpuPercent > 10.0) cpuItem->setForeground(QColor(255, 183, 77));
         m_tableWidget->setItem(row, 3, cpuItem);
 
         // Memory (RAM)
         double ramMb = static_cast<double>(app.totalRssBytes) / (1024.0 * 1024.0);
-        auto *memItem = new AppNumericItem(ramMb, formatAppRam(app.totalRssBytes));
+        auto *memItem = new AppNumericItem(ramMb, nameStr, formatAppRam(app.totalRssBytes));
         memItem->setForeground(QColor(0, 230, 118));
         m_tableWidget->setItem(row, 2, memItem);
 
         // User
-        m_tableWidget->setItem(row, 4, new QTableWidgetItem(QString::fromStdString(app.user)));
+        m_tableWidget->setItem(row, 4, new AppTextItem(QString::fromStdString(app.user), nameStr));
 
         displayCount++;
     }
 
     m_tableWidget->setSortingEnabled(true);
 
-    if (targetRowToSelect >= 0 && targetRowToSelect < m_tableWidget->rowCount()) {
-        m_tableWidget->selectRow(targetRowToSelect);
+    // Row indices shift when setSortingEnabled(true) re-sorts above, so the
+    // previously-selected app must be found by name, not by the row index it
+    // had while being inserted.
+    if (!selectedAppName.isEmpty()) {
+        for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
+            auto *item = m_tableWidget->item(row, 0);
+            if (item && item->data(Qt::UserRole).toString() == selectedAppName) {
+                m_tableWidget->selectRow(row);
+                break;
+            }
+        }
     }
 
     m_tableWidget->setUpdatesEnabled(true);

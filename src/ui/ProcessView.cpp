@@ -11,20 +11,43 @@
 
 namespace Harbor {
 
+// Ties (e.g. many idle processes at 0.0% CPU, or duplicate names) are broken
+// by PID so sort order stays deterministic across refreshes instead of
+// jumping around when rows get rebuilt in a different scan order each tick.
 class NumericTableWidgetItem : public QTableWidgetItem {
 public:
     enum Type { Double, Int, Bytes };
-    NumericTableWidgetItem(double val, Type t, const QString &displayStr)
-        : QTableWidgetItem(displayStr), m_numValue(val), m_type(t) {}
+    NumericTableWidgetItem(double val, int pid, Type t, const QString &displayStr)
+        : QTableWidgetItem(displayStr), m_numValue(val), m_pid(pid), m_type(t) {}
 
     bool operator<(const QTableWidgetItem &other) const override {
         const auto *o = dynamic_cast<const NumericTableWidgetItem*>(&other);
-        if (o) return m_numValue < o->m_numValue;
+        if (o) {
+            if (m_numValue != o->m_numValue) return m_numValue < o->m_numValue;
+            return m_pid < o->m_pid;
+        }
         return QTableWidgetItem::operator<(other);
     }
 private:
     double m_numValue{0.0};
+    int m_pid{0};
     Type m_type{Double};
+};
+
+class TextTableWidgetItem : public QTableWidgetItem {
+public:
+    TextTableWidgetItem(const QString &displayStr, int pid)
+        : QTableWidgetItem(displayStr), m_pid(pid) {}
+
+    bool operator<(const QTableWidgetItem &other) const override {
+        int cmp = text().localeAwareCompare(other.text());
+        if (cmp != 0) return cmp < 0;
+        const auto *o = dynamic_cast<const TextTableWidgetItem*>(&other);
+        if (o) return m_pid < o->m_pid;
+        return QTableWidgetItem::operator<(other);
+    }
+private:
+    int m_pid{0};
 };
 
 ProcessView::ProcessView(QWidget *parent)
@@ -115,7 +138,6 @@ void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
     m_tableWidget->setRowCount(0);
 
     int displayCount = 0;
-    int targetRowToSelect = -1;
 
     for (const auto &p : processes) {
         if (!m_filterText.isEmpty()) {
@@ -130,22 +152,18 @@ void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
         int row = m_tableWidget->rowCount();
         m_tableWidget->insertRow(row);
 
-        if (p.pid == selectedPid) {
-            targetRowToSelect = row;
-        }
-
         // PID
-        m_tableWidget->setItem(row, 0, new NumericTableWidgetItem(p.pid, NumericTableWidgetItem::Int, QString::number(p.pid)));
-        
+        m_tableWidget->setItem(row, 0, new NumericTableWidgetItem(p.pid, p.pid, NumericTableWidgetItem::Int, QString::number(p.pid)));
+
         // Name
-        m_tableWidget->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(p.name)));
-        
+        m_tableWidget->setItem(row, 1, new TextTableWidgetItem(QString::fromStdString(p.name), p.pid));
+
         // User
-        m_tableWidget->setItem(row, 2, new QTableWidgetItem(QString::fromStdString(p.user)));
+        m_tableWidget->setItem(row, 2, new TextTableWidgetItem(QString::fromStdString(p.user), p.pid));
 
         // CPU %
         QString cpuStr = QString::number(p.cpuPercent, 'f', 1) + "%";
-        auto *cpuItem = new NumericTableWidgetItem(p.cpuPercent, NumericTableWidgetItem::Double, cpuStr);
+        auto *cpuItem = new NumericTableWidgetItem(p.cpuPercent, p.pid, NumericTableWidgetItem::Double, cpuStr);
         if (p.cpuPercent > 50.0) cpuItem->setForeground(QColor(255, 82, 82));
         else if (p.cpuPercent > 10.0) cpuItem->setForeground(QColor(255, 183, 77));
         m_tableWidget->setItem(row, 3, cpuItem);
@@ -153,7 +171,7 @@ void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
         // Memory (RSS)
         double memMb = static_cast<double>(p.rssBytes) / (1024.0 * 1024.0);
         QString memStr = QString::number(memMb, 'f', 1) + " MB";
-        auto *memItem = new NumericTableWidgetItem(memMb, NumericTableWidgetItem::Double, memStr);
+        auto *memItem = new NumericTableWidgetItem(memMb, p.pid, NumericTableWidgetItem::Double, memStr);
         m_tableWidget->setItem(row, 4, memItem);
 
         // State
@@ -166,18 +184,27 @@ void ProcessView::updateProcesses(const std::vector<ProcessInfo> &processes) {
             case 'T': stateStr = "Stopped (T)"; break;
             default: stateStr = QString(p.state); break;
         }
-        m_tableWidget->setItem(row, 5, new QTableWidgetItem(stateStr));
+        m_tableWidget->setItem(row, 5, new TextTableWidgetItem(stateStr, p.pid));
 
         // Nice
-        m_tableWidget->setItem(row, 6, new NumericTableWidgetItem(p.nice, NumericTableWidgetItem::Int, QString::number(p.nice)));
+        m_tableWidget->setItem(row, 6, new NumericTableWidgetItem(p.nice, p.pid, NumericTableWidgetItem::Int, QString::number(p.nice)));
 
         displayCount++;
     }
 
     m_tableWidget->setSortingEnabled(true);
 
-    if (targetRowToSelect >= 0 && targetRowToSelect < m_tableWidget->rowCount()) {
-        m_tableWidget->selectRow(targetRowToSelect);
+    // Row indices shift when setSortingEnabled(true) re-sorts above, so the
+    // previously-selected process must be found by PID, not by the row index
+    // it had while being inserted.
+    if (selectedPid >= 0) {
+        for (int row = 0; row < m_tableWidget->rowCount(); ++row) {
+            auto *item = m_tableWidget->item(row, 0);
+            if (item && item->text().toInt() == selectedPid) {
+                m_tableWidget->selectRow(row);
+                break;
+            }
+        }
     }
 
     m_tableWidget->setUpdatesEnabled(true);
