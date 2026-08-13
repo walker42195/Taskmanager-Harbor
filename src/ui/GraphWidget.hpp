@@ -1,6 +1,7 @@
 #ifndef GRAPHWIDGET_HPP
 #define GRAPHWIDGET_HPP
 
+#include <iterator>
 #include <QWidget>
 #include <QColor>
 #include <QString>

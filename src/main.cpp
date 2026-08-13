@@ -1,3 +1,4 @@
+#include <iterator>
 #include <QApplication>
 #include "ui/MainWindow.hpp"
 

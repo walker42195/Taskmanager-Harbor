@@ -1,6 +1,7 @@
 #ifndef FLOWLAYOUT_HPP
 #define FLOWLAYOUT_HPP
 
+#include <iterator>
 #include <QLayout>
 #include <QRect>
 #include <QStyle>
