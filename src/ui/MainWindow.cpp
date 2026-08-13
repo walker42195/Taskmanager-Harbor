@@ -111,8 +111,8 @@ MainWindow::MainWindow(QWidget *parent)
     overviewLayout->addWidget(m_overviewCpuGraph, 0, 0);
     overviewLayout->addWidget(m_overviewGpuGraph, 0, 1);
     overviewLayout->addWidget(m_overviewRamGraph, 0, 2);
-    overviewLayout->addWidget(m_overviewNetGraph, 1, 0, 1, 1);
-    overviewLayout->addWidget(m_overviewDiskGraph, 1, 1, 1, 2);
+    overviewLayout->addWidget(m_overviewNetGraph, 1, 0, 1, 2);
+    overviewLayout->addWidget(m_overviewDiskGraph, 1, 2, 1, 1);
 
     // --- Sub Views ---
     m_applicationsView = new ApplicationsView(this);
