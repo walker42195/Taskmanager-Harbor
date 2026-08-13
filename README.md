@@ -1,19 +1,19 @@
 # Taskmanager-Harbor
 
-**Taskmanager-Harbor** is a modern, high-performance, dark-themed System Monitor & Task Manager for Linux (specifically optimized for Arch Linux), written in **C++20** and **Qt 6**.
+**Taskmanager-Harbor** is a modern, high-performance, dark-themed System Monitor & Task Manager for **Linux** and **Windows**, written in **C++** and **Qt 6**.
 
-Designed to be sleeker, faster, and more detailed than standard Linux system monitors while consuming minimal CPU overhead (**< 0.5% CPU load**).
+Designed to be sleeker, faster, and more detailed than standard system monitors while consuming minimal CPU overhead (**< 0.5% CPU load**).
 
 ---
 
 ## 🌟 Key Features
 
-- **📊 Overview Dashboard**: Real-time multi-metric sparkline grid for CPU, RAM, Network, and Disk I/O.
+- **📊 Overview Dashboard**: Real-time multi-metric sparkline grid for CPU, GPU, RAM, Network, and Disk I/O.
+- **🎮 GPU & VRAM View**: Real-time core utilization, VRAM usage (GB & %), GPU temperature (°C), power draw (W), and clock speed (MHz) for NVIDIA, AMD, and Intel GPUs.
 - **🚀 Desktop Applications View**:
-  - Parses system `.desktop` application files from `/usr/share/applications/` and `~/.local/share/applications/`.
-  - Groups child helper processes (e.g. Brave, Discord, Telegram, Dolphin, Konsole, Kate, digiKam, Nextcloud, Taskmanager-Harbor) into single application entries with official XDG desktop icons.
+  - Groups child helper processes (e.g. Brave, Discord, Telegram, Taskmanager-Harbor) into single application entries with official desktop icons.
   - Aggregates non-desktop background daemons into a clean **Background Services** row.
-  - Displays exact memory consumption in **GiB** and **MiB**.
+  - Displays exact memory consumption in **GB** and **MB**.
 - **💻 CPU & Cores View**:
   - Overall CPU usage sparkline graph.
   - Per-core and per-thread load meters with real-time frequency display (GHz).
@@ -21,31 +21,33 @@ Designed to be sleeker, faster, and more detailed than standard Linux system mon
   - Detailed breakdown of total, used, and buffered/cached RAM in **GB**.
   - Swap memory visualizer with vibrant gradient sparklines.
 - **🌐 Network Traffic View**:
-  - Dual-line real-time graph for incoming (RX - Cyan) and outgoing (TX - Pink) network traffic.
-  - Per-interface breakdown table (e.g. `eth0`, `wlan0`) with cumulative transfer statistics.
+  - Dual-line real-time graph for incoming (RX) and outgoing (TX) network traffic.
+  - Per-interface breakdown table with cumulative transfer statistics.
 - **💾 Disks & Storage View**:
   - Detects all mounted physical drives (NVMe SSD, SATA SSD/HDD) and removable **USB drives**.
-  - **Disk Selector Dropdown**: Switch between *All Disks (Combined Total)* and individual physical drives (*nvme0n1*, *sda*, *sdb*, etc.) to view per-disk real-time Read/Write sparkline graphs.
-  - Storage space capacity bars (Used / Available / Total GB & TB).
+  - Real-time Read/Write sparkline graphs and capacity bars (Used / Available / Total GB & TB).
 - **⚡ Interactive Process Manager**:
   - Search filter by process name or PID.
   - Sortable columns (PID, Name, User, CPU %, RAM MB, Status, Nice).
-  - Right-click context menu & action buttons to End Task (`SIGTERM`), Force Kill (`SIGKILL`), Pause/Resume (`SIGSTOP`/`SIGCONT`), or adjust priority (`nice`).
-  - **Privileged Process Elevation**: Integrated `pkexec` (Polkit) support to safely terminate or kill root/system processes via your desktop's native password prompt.
-- **ℹ️ Hardware & System Specs**: OS, Linux Kernel version, Hostname, Architecture, CPU model, and live Uptime counter.
-- **🎨 Custom Vector Icons & Responsive Wrapping Tab Bar**:
-  - Custom SVG vector icons compiled directly into Qt binary resources (`resources.qrc`).
-  - **FlowLayout Tab Bar**: Tabs automatically wrap onto new lines (up to 3 rows) when resizing the window smaller.
-- **⚡ Ultra-Low Resource Usage**:
-  - **Lazy Tab Updates**: Only updates the currently active tab in real-time, reducing CPU work by >85%.
-  - **RAM Icon Caching**: Caches application icons in memory to prevent disk I/O thrashing.
-  - **Batch UI Repaints**: Prevents micro-lag during process table population.
+  - End Task, Force Kill, Pause/Resume, or adjust priority (`nice`).
+- **ℹ️ Hardware & System Specs**: OS, Kernel / Windows NT version, Hostname, Architecture, CPU model, and live Uptime counter.
 
 ---
 
-## 🏗️ Installation & Usage
+## 🪟 Windows Download & Usage
 
-### Option 1: Quick Install (Pre-compiled Binary — No Compilation Needed!)
+Pre-compiled standalone package for 64-bit Windows (Windows 10 / 11):
+
+- ⚡ **[Download Taskmanager-Harbor-Windows-x64.zip (Direct Download)](https://github.com/walker42195/Taskmanager-Harbor/releases/download/latest/Taskmanager-Harbor-Windows-x64.zip)**
+- 🔗 **[GitHub Releases Page](https://github.com/walker42195/Taskmanager-Harbor/releases/tag/latest)**
+
+**Usage**: Simply extract `Taskmanager-Harbor-Windows-x64.zip` anywhere on your PC and launch `Taskmanager-Harbor.exe`. No installation required!
+
+---
+
+## 🐧 Linux Installation & Usage
+
+### Option 1: Quick Install (Pre-compiled Binary)
 
 You can download the pre-compiled ready-to-run release directly from [GitHub Releases](https://github.com/walker42195/Taskmanager-Harbor/releases/latest):
 
